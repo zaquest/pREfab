@@ -1,0 +1,26 @@
+{
+  "name": "pseditor",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ],
+  "dependencies": {
+    "purescript-console": "^1.0.0"
+  },
+  "devDependencies": {
+    "purescript-psci-support": "^1.0.0",
+    "purescript-lists": "^1.0.1",
+    "purescript-assert": "^1.0.0",
+    "purescript-math": "^2.0.0",
+    "purescript-globals": "^1.0.0",
+    "purescript-validation": "^1.0.0",
+    "purescript-react": "^1.1.0",
+    "purescript-transformers": "^1.0.0",
+    "purescript-transformerless": "^1.1.1",
+    "purescript-canvas": "^1.0.0",
+    "purescript-jquery": "^1.0.0",
+    "purescript-foreign": "^1.0.0"
+  }
+}
