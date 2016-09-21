@@ -2,18 +2,7 @@ module Linear.R2 where
 
 import Prelude
 import Linear.Epsilon (class Epsilon, nearZero)
--- import Data.Monoid ((<>))
--- import Data.Show (class Show, show)
--- import Data.Semiring (class Semiring, one, mul, zero, add, (*), (+))
--- import Data.Ring (class Ring, sub, (-))
--- import Data.EuclideanRing (class EuclideanRing, mod, div, degree)
--- import Data.CommutativeRing (class CommutativeRing)
--- import Data.Field (class Field)
--- import Data.Eq (class Eq, (==))
--- import Data.Ord (class Ord, compare, Ordering(..))
--- import Data.BooleanAlgebra ((&&))
--- import Data.Functor
--- import Data.Function (flip)
+import Math (sqrt)
 
 type R2Rec a = { x :: a, y :: a }
 
@@ -182,3 +171,18 @@ crossZ (V2 {x: x1, y: y1}) (V2 {x: x2, y: y2}) = x1 * y2 - y1 * x2
 p2Diff :: forall a. Ring a => P2 a -> P2 a -> V2 a
 p2Diff (P2 {x: x1, y: y1}) (P2 {x: x2, y: y2}) = V2 {x: x1 - x2, y: y1 - y2}
 infixl 6 p2Diff as .-.
+
+invY :: forall a. Ring a => P2 a -> P2 a
+invY (P2 {x, y}) = P2 { x: x, y: (-y) }
+
+norm :: V2 Number -> Number
+norm (V2 {x, y}) = sqrt (x * x + y * y)
+
+distance :: P2 Number -> P2 Number -> Number
+distance a b = norm (a .-. b)
+
+qd :: forall a. Semiring a => V2 a -> a
+qd (V2 {x, y}) = x * x + y * y
+
+quadrance :: forall a. Ring a => P2 a -> P2 a -> a
+quadrance a b = qd (a .-. b)

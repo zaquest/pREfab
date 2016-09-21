@@ -4,9 +4,11 @@ module Data.Polygon
      , Repr
      , Line(..)
      , Line2(..)
+     , Edge(..)
+     , Edge2(..)
      , fromFoldable
      , points
-     --, simplify
+     , simplify
      --, moveBy
      , boundingBox
      , showBBRec
@@ -17,6 +19,15 @@ module Data.Polygon
      , length
      , uncons
      , square
+     , sortBy
+     , filter
+     , null
+     , elemIndex
+     , at
+     , update
+     , insert
+     , edges
+     , onLine
      ) where
 
 import Prelude
@@ -33,6 +44,9 @@ import Utils (foldlA2)
 
 type Repr = L.List
 
+at :: forall a. Repr a -> Int -> Maybe a
+at = L.index
+
 length :: forall a. Repr a -> Int
 length = L.length
 
@@ -41,6 +55,12 @@ cons = L.Cons
 
 nil :: forall a. Repr a
 nil = L.Nil
+
+sortBy :: forall a. (a -> a -> Ordering) -> Repr a -> Repr a
+sortBy = L.sortBy
+
+filter :: forall a. (a -> Boolean) -> Repr a -> Repr a
+filter = L.filter
 
 emptyPoly :: forall p. Polygon p
 emptyPoly = Poly nil
@@ -219,3 +239,21 @@ isConvex (Poly ps) = do
 
 square :: forall a. Semiring a => a -> P2 a -> Poly2 a
 square side lo@(P2 o) = Poly $ fromFoldable [lo, p2 o.x (o.y + side), lo ^+ side, p2 (o.x + side) o.y]
+
+-- | Repr dependent
+simplify :: forall a. (Ring a, Epsilon a) => Repr (P2 a) -> Repr (P2 a)
+simplify ps
+  | length ps < 3 = ps
+  | otherwise = fromMaybe ps do
+    ht <- uncons ps
+    l <- L.last ht.tail
+    let ps' = simplify' (l `cons` ps `snoc` ht.head)
+    t <- L.tail ps'
+    ps'' <- L.init t
+    pure ps''
+  where
+    simplify' (L.Cons p0 ps0@(L.Cons p1 ps1@(L.Cons p2 _))) =
+      if onLine p0 p1 p2
+        then L.Cons p0 (simplify' ps1)
+        else L.Cons p0 (simplify' ps0)
+    simplify' rest = rest

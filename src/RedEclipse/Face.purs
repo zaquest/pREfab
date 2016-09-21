@@ -1,6 +1,6 @@
 module RedEclipse.Face
      ( validatePoly
-     , ValidityRec
+     , Validity
      , Plane(..)
      --, CFace
      --, gridPrev
@@ -65,9 +65,9 @@ validFace poly@(Poly ps) = has3Or4Edges && onGridAndConvex
 
 type Plane a = Array (Array a)
 
-type ValidityRec = { lo :: P2 CGrid, hi :: P2 CGrid, validity :: Plane Boolean }
+type Validity = { lo :: P2 CGrid, hi :: P2 CGrid, validity :: Plane Boolean }
 
-validatePoly :: Poly2 CGrid -> Maybe ValidityRec
+validatePoly :: Poly2 CGrid -> Maybe Validity
 validatePoly poly@(Poly ps) = do
   bb <- (\b -> { lo: gridPrev <$> b.lo, hi: gridNext <$> b.hi }) <$> boundingBox poly
   let poly' = (\p -> p - bb.lo) <$> poly

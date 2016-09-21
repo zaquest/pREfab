@@ -21,6 +21,7 @@
     "purescript-transformerless": "^1.1.1",
     "purescript-canvas": "^1.0.0",
     "purescript-jquery": "^1.0.0",
-    "purescript-foreign": "^1.0.0"
+    "purescript-foreign": "^1.0.0",
+    "purescript-test-unit": "^9.1.0"
   }
 }
