@@ -1,7 +1,8 @@
 module Grid where
 
 import Prelude
-import Linear.R2 (P2, invY, (^*), (^/))
+import Linear.R2 (P2, invY)
+import Linear.Vector ((^*), (^/))
 import Data.Int (toNumber, round)
 
 -- | Grid coordinate type.

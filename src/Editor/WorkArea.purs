@@ -20,7 +20,7 @@ editPointEq p1 p2 = p1.before == p2.before && p1.point == p2.point && p1.after =
 
 type WorkArea = { poly :: Poly2 CGrid
                 , point :: Maybe (EditPoint CGrid)
-                , validity :: Maybe Validity }
+                , validity :: Validity }
 
 mkWorkArea :: Poly2 CGrid -> WorkArea
 mkWorkArea poly = { poly: poly

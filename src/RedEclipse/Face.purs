@@ -11,9 +11,13 @@ import Prelude
 import Data.Int (ceil, round, toNumber)
 import Data.Traversable (sequence, for)
 import Data.Array ((..))
-import Data.Polygon (Polygon(..), Poly2, Line2, isConvex, length, origin, boundingBox, square, clip, points)
-import Linear.R2 (P2, p2, p2rec, (^*))
+import Data.Polygon (Poly2, isConvex, length, origin, square, clip,
+                     move)
+import Data.BoundingBox (boundingBox)
+import Linear.R2 (P2, p2, r2, V2(..))
+import Linear.Vector ((^*))
 import Linear.Epsilon ((~=))
+import Data.Segment (Seg2)
 import Data.Maybe (Maybe(..))
 import RedEclipse.Face.Side (Side(..))
 import Grid (CGrid, gridSize, gridPrev, gridNext)
@@ -27,7 +31,7 @@ type Corner = P2 Side
 allCorners :: Array Corner
 allCorners = [p2 SDown SLeft, p2 SUp SLeft, p2 SUp SRight, p2 SDown SRight]
 
-type ASide a = { side :: Side, edge :: Line2 a }
+type ASide a = { side :: Side, edge :: Seg2 a }
 
 -- overEdge :: forall a b. ASide a -> (Line2 a -> Line2 b) -> ASide b
 -- overEdge (aSide@{ edge: anEdge }) f = aSide { edge = f anEdge }
@@ -53,33 +57,41 @@ type ASide a = { side :: Side, edge :: Line2 a }
 -- emptyFace :: Face
 -- emptyFace = face emptyEdge emptyEdge emptyEdge emptyEdge
 
+-- | Face is valid if it has 3 or 4 edges and it's convex and all of
+-- it's vertices lie on grid node.
 validFace :: Poly2 Number -> Boolean
-validFace poly@(Poly ps) = has3Or4Edges && onGridAndConvex
+validFace poly = has3Or4Edges && onGridAndConvex
   where
-    len = length ps
+    len = length poly
     has3Or4Edges = len == 3 || len == 4
-    onGridAndConvex = Just true == do
-      o <- map (gridPrev <<< ceil) <$> origin poly
-      ps' <- sequence $ toFaceCoords o <$> ps
-      isConvex (Poly ps')
+    onGridAndConvex =
+      let o = (gridPrev <<< ceil) <$> origin poly
+          mpoly' = sequence $ toFaceCoords o <$> poly
+       in Just true == (isConvex <$> mpoly')
 
 type Plane a = Array (Array a)
 
 type Validity = { lo :: P2 CGrid, hi :: P2 CGrid, validity :: Plane Boolean }
 
-validatePoly :: Poly2 CGrid -> Maybe Validity
-validatePoly poly@(Poly ps) = do
-  bb <- (\b -> { lo: gridPrev <$> b.lo, hi: gridNext <$> b.hi }) <$> boundingBox poly
-  let poly' = (\p -> p - bb.lo) <$> poly
-  let width = (p2rec bb.hi).x - (p2rec bb.lo).x
-  let height = (p2rec bb.hi).y - (p2rec bb.lo).y
-  let oPoly = map toNumber <$> poly'
-  let validity = for (0..((height / gridSize) - 1)) $ \y ->
+-- | Polygon is valid if all of it's intersections with big (8x8) gird
+-- are valid faces
+validatePoly :: Poly2 CGrid -> Validity
+validatePoly poly =
+  let bb = boundingBox poly
+      plo = gridPrev <$> bb.lo
+      lo = r2 plo
+      phi = gridNext <$> bb.hi
+      hi = r2 phi
+      poly' = move poly (negate (V2 lo))
+      width = hi.x - lo.x
+      height = hi.y - lo.y
+      oPoly = map toNumber <$> poly'
+      validity = for (0..((height / gridSize) - 1)) $ \y ->
                    for (0..((width / gridSize) - 1)) $ \x ->
                      let cs = square (toNumber gridSize) (toNumber <$> p2 x y ^* gridSize)
                          intersection = clip cs oPoly
-                     in Identity (length (points intersection) < 3 || validFace intersection)
-  pure { lo: bb.lo, hi: bb.hi, validity: runIdentity validity }
+                      in Identity (length intersection < 3 || validFace intersection)
+  in { lo: plo, hi: phi, validity: runIdentity validity }
 
 -- toPlane :: Poly2 Int -> (P2 Int, Plane (Maybe Face))
 -- toPlane aPoly = (,) lo $
@@ -108,7 +120,7 @@ validatePoly poly@(Poly ps) = do
 -- CFace. It is not converted to the CFace type because further
 -- processing is required.
 toFaceCoords :: P2 CGrid -> P2 Number -> Maybe (P2 CFace)
-toFaceCoords o p = if onGrid && inFace (p2rec f).x && inFace (p2rec f).y
+toFaceCoords o p = if onGrid && inFace (r2 f).x && inFace (r2 f).y
                      then Just f
                      else Nothing
   where

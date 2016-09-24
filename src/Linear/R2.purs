@@ -1,8 +1,15 @@
 module Linear.R2 where
 
 import Prelude
+import Data.Monoid ((<>))
+import Data.Foldable (class Foldable)
 import Linear.Epsilon (class Epsilon, nearZero)
-import Math (sqrt)
+import Linear.Vector ( class Additive, defaultZero, defaultVAddV
+                     , defaultVSubV, defaultLerp, defaultLiftU2
+                     , defaultLiftI2 )
+import Linear.Metric ( class Metric, defaultDot, defaultQuadrance
+                     , defaultQd, defaultDistance, defaultNorm
+                     , defaultSignorm )
 
 type R2Rec a = { x :: a, y :: a }
 
@@ -15,11 +22,14 @@ v2 x y = V2 {x: x, y: y} {-# INLINE v2 #-}
 p2 :: forall a. a -> a -> P2 a
 p2 x y = P2 {x: x, y: y} {-# INLINE p2 #-}
 
-v2rec :: forall a. V2 a -> R2Rec a
-v2rec (V2 rec) = rec
+class R2 t where
+  r2 :: forall a. t a -> R2Rec a
 
-p2rec :: forall a. P2 a -> R2Rec a
-p2rec (P2 rec) = rec
+instance v2r2 :: R2 V2 where
+  r2 (V2 rec) = rec
+
+instance p2r2 :: R2 P2 where
+  r2 (P2 rec) = rec
 
 instance v2Semiring :: Semiring a => Semiring (V2 a) where
     one = V2 {x: one, y: one}
@@ -93,11 +103,53 @@ instance v2Applicative :: Applicative V2 where
 instance p2Applicative :: Applicative P2 where
   pure x = p2 x x
 
+instance v2Additive :: Additive V2 where
+  aZero = defaultZero
+  vAddV = defaultVAddV
+  vSubV = defaultVSubV
+  lerp = defaultLerp
+  liftU2 = defaultLiftU2
+  liftI2 = defaultLiftI2
+
+instance p2Additive :: Additive P2 where
+  aZero = defaultZero
+  vAddV = defaultVAddV
+  vSubV = defaultVSubV
+  lerp = defaultLerp
+  liftU2 = defaultLiftU2
+  liftI2 = defaultLiftI2
+
+instance v2Metric :: Metric V2 where
+  dot = defaultDot
+  quadrance = defaultQuadrance
+  qd = defaultQd
+  distance = defaultDistance
+  norm = defaultNorm
+  signorm = defaultSignorm
+
+instance p2Metric :: Metric P2 where
+  dot = defaultDot
+  quadrance = defaultQuadrance
+  qd = defaultQd
+  distance = defaultDistance
+  norm = defaultNorm
+  signorm = defaultSignorm
+
 instance v2Epsilon :: Epsilon a => Epsilon (V2 a) where
     nearZero (V2 {x: x, y: y}) = nearZero x && nearZero y
 
 instance p2Epsilon :: Epsilon a => Epsilon (P2 a) where
     nearZero (P2 {x: x, y: y}) = nearZero x && nearZero y
+
+instance v2Foldable :: Foldable V2 where
+  foldMap f (V2 {x, y}) = f x <> f y
+  foldl f acc (V2 {x, y}) = f (f acc x) y
+  foldr f acc (V2 {x, y}) = f x (f y acc)
+
+instance p2Foldable :: Foldable P2 where
+  foldMap f (P2 {x, y}) = f x <> f y
+  foldl f acc (P2 {x, y}) = f (f acc x) y
+  foldr f acc (P2 {x, y}) = f x (f y acc)
 
 instance v2Show :: Show a => Show (V2 a) where
   show (V2 {x: x, y: y}) = "V2 " <> show x <> " " <> show y
@@ -125,45 +177,6 @@ pDivV :: forall a. EuclideanRing a => P2 a -> V2 a -> P2 a
 pDivV (P2 {x: px, y: py}) (V2 {x: vx, y: vy}) = P2 {x: div px vx, y: div py vy}
 infixl 7 pDivV as ./^
 
--- scalar-functor and functor-scalar ops
-sAddF :: forall a f. (Semiring a, Functor f) => a -> f a -> f a
-sAddF s f = add s <$> f
-infixl 6 sAddF as +^
-
-fAddS :: forall a f. (Semiring a, Functor f) => f a -> a -> f a
-fAddS f s = flip add s <$> f
-infixl 6 fAddS as ^+
-
-sMulF :: forall a f. (Semiring a, Functor f) => a -> f a -> f a
-sMulF s f = mul s <$> f
-infixl 7 sMulF as *^
-
-fMulS :: forall a f. (Semiring a, Functor f) => f a -> a -> f a
-fMulS f s = flip mul s <$> f
-infixl 7 fMulS as ^*
-
-sSubF :: forall a f. (Ring a, Functor f) => a -> f a -> f a
-sSubF s f = sub s <$> f
-infixl 6 sSubF as -^
-
-fSubS :: forall a f. (Ring a, Functor f) => f a -> a -> f a
-fSubS f s = flip sub s <$> f
-infixl 6 sSubF as ^-
-
-sModF :: forall a f. (EuclideanRing a, Functor f) => a -> f a -> f a
-sModF s f = mod s <$> f
-
-fModS :: forall a f. (EuclideanRing a, Functor f) => f a -> a -> f a
-fModS f s = flip mod s <$> f
-
-sDivF :: forall a f. (EuclideanRing a, Functor f) => a -> f a -> f a
-sDivF s f = div s <$> f
-infixl 7 sDivF as /^
-
-fDivS :: forall a f. (EuclideanRing a, Functor f) => f a -> a -> f a
-fDivS f s = flip div s <$> f
-infixl 7 fDivS as ^/
-
 crossZ :: forall a. Ring a => V2 a -> V2 a -> a
 crossZ (V2 {x: x1, y: y1}) (V2 {x: x2, y: y2}) = x1 * y2 - y1 * x2
 {-# INLINE crossZ #-}
@@ -174,15 +187,3 @@ infixl 6 p2Diff as .-.
 
 invY :: forall a. Ring a => P2 a -> P2 a
 invY (P2 {x, y}) = P2 { x: x, y: (-y) }
-
-norm :: V2 Number -> Number
-norm (V2 {x, y}) = sqrt (x * x + y * y)
-
-distance :: P2 Number -> P2 Number -> Number
-distance a b = norm (a .-. b)
-
-qd :: forall a. Semiring a => V2 a -> a
-qd (V2 {x, y}) = x * x + y * y
-
-quadrance :: forall a. Ring a => P2 a -> P2 a -> a
-quadrance a b = qd (a .-. b)

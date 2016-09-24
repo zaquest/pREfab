@@ -22,6 +22,7 @@
     "purescript-canvas": "^1.0.0",
     "purescript-jquery": "^1.0.0",
     "purescript-foreign": "^1.0.0",
-    "purescript-test-unit": "^9.1.0"
+    "purescript-test-unit": "^9.1.0",
+    "purescript-quickcheck": "^1.0.0"
   }
 }

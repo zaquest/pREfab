@@ -26,7 +26,7 @@ import Drag.EditPoint (editPointDrag)
 type State = { drag :: Maybe Drag
              , editor :: Editor }
 
-type PointDrag = Poly2 CGrid -> Either (P2 CGrid) (Edge2 CGrid) -> P2 CGrid -> Poly2 CGrid
+--type PointDrag = Poly2 CGrid -> Either (P2 CGrid) (Edge2 CGrid) -> P2 CGrid -> Poly2 CGrid
 
 mouseXY :: forall e. JQueryEvent -> Eff (dom :: DOM | e) (P2 Number)
 mouseXY e = p2 <$> clientX e <*> clientY e

@@ -12,7 +12,8 @@ import Data.Int (toNumber)
 
 import Grid (CGrid)
 import Grid as G
-import Linear.R2 (P2, p2, (^/))
+import Linear.R2 (P2, p2)
+import Linear.Vector ((^/))
 
 type View = { width :: Number
             , height :: Number

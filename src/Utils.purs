@@ -2,13 +2,20 @@ module Utils
      ( enumerate
      , foldlA2
      , whileM_
+     , bug
+     , quot
+     , fromJust
+     , zipWith3
      ) where
 
 import Prelude
 import Data.Traversable (class Traversable, for)
 import Data.Foldable (class Foldable, foldl)
 import Data.Maybe (Maybe(..))
+import Data.Maybe (fromJust) as M
 import Control.Monad.Transformerless.State (evalState, put, get)
+import Partial.Unsafe (unsafePartial, unsafeCrashWith)
+import Data.Array (zipWith) as A
 
 foldlA2 :: forall t f a. (Foldable t, Applicative f) => (a -> a -> a) -> t (f a) -> Maybe (f a)
 foldlA2 f = foldl af Nothing
@@ -25,3 +32,25 @@ enumerate xs = flip evalState 0 <<< for xs $ \x -> do
                  idx <- get
                  put (idx + 1)
                  pure { idx: idx, elem: x }
+
+bug :: forall a. String -> a
+bug = unsafeCrashWith
+
+-- Like @x `mod` y@ but always returns value in range @[0, y)@, even
+-- if `x` is negative.
+quot :: Int -> Int -> Int
+quot x y = let z = x `mod` y
+           in if z < 0
+                then z + y
+                else z
+
+fromJust :: forall a. Maybe a -> a
+fromJust m = unsafePartial (M.fromJust m)
+
+zipWith3 :: forall a b c d
+          . (a -> b -> c -> d)
+         -> Array a
+         -> Array b
+         -> Array c
+         -> Array d
+zipWith3 f as bs = A.zipWith ($) (A.zipWith f as bs)

@@ -1,22 +1,22 @@
 module Main where
 
 import Prelude
-import Data.Maybe (Maybe(..))
-import Data.Int (toNumber)
+import Data.Polygon as Poly
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Graphics.Canvas (CANVAS, getCanvasElementById, getContext2D, setCanvasWidth, setCanvasHeight)
 import DOM (DOM)
 import DOM.HTML (window) as DOM
 import DOM.HTML.Window (innerHeight, innerWidth) as DOM
-
-import Ref (REF)
-import Linear.R2 (p2)
-import Data.Polygon as Poly
-import Grid (CGrid)
+import Data.Int (toNumber)
+import Data.Maybe (Maybe(..))
 import Editor.Editor (mkEditor)
 import Editor.Render (drawWorkArea)
+import Graphics.Canvas (CANVAS, getCanvasElementById, getContext2D, setCanvasWidth, setCanvasHeight)
+import Grid (CGrid)
 import Interactive (setUpHandlers)
+import Linear.R2 (p2)
+import Ref (REF)
+import Utils (fromJust)
 
 --showValidity (Editor e) =
 --  case e.validity of
@@ -24,7 +24,7 @@ import Interactive (setUpHandlers)
 --    Just v  -> log ("Just (" <> show v.lo <> " " <> show v.hi <> " " <> show v.validity <> ")")
 
 poly :: Poly.Poly2 CGrid
-poly = Poly.Poly $ Poly.fromFoldable [p2 0 2, p2 16 0, p2 8 8, p2 (-1) 16]
+poly = fromJust $ Poly.mkPoly [p2 0 2, p2 16 0, p2 8 8, p2 (-1) 16]
 
 main :: forall e. Eff (canvas :: CANVAS, dom :: DOM, console :: CONSOLE, ref :: REF | e) Unit
 main = do

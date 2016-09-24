@@ -2,12 +2,18 @@ module Test.Main where
 
 import Prelude
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Console (CONSOLE)
+import Control.Monad.Aff.AVar (AVAR)
 
-import Test.Assert (ASSERT, assert)
-import Test.EditPoint (testPolyEditPoints)
-import Test.Polygon (testOnLine)
+import Test.Unit.Main (runTest)
+import Test.Unit.Console (TESTOUTPUT)
 
-main :: forall a. Eff (assert :: ASSERT | a) Unit
-main = do
-  testPolyEditPoints
-  testOnLine
+import Test.Linear (linearSuite)
+
+--main :: forall a. Eff (assert :: ASSERT | a) Unit
+main :: forall e. Eff ( console :: CONSOLE
+                        , testOutput :: TESTOUTPUT
+                        , avar :: AVAR | e )
+                      Unit 
+main = runTest do
+  linearSuite
