@@ -12,13 +12,13 @@ import Data.Int (ceil, round, toNumber)
 import Data.Traversable (sequence, for)
 import Data.Array ((..))
 import Data.Polygon (Poly2, isConvex, length, origin, square, clip,
-                     move)
+                     move, prunePoly)
 import Data.BoundingBox (boundingBox)
 import Linear.R2 (P2, p2, r2, V2(..))
 import Linear.Vector ((^*))
 import Linear.Epsilon ((~=))
 import Data.Segment (Seg2)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import RedEclipse.Face.Side (Side(..))
 import Grid (CGrid, gridSize, gridPrev, gridNext)
 import Data.Identity (Identity(..), runIdentity)
@@ -60,14 +60,17 @@ type ASide a = { side :: Side, edge :: Seg2 a }
 -- | Face is valid if it has 3 or 4 edges and it's convex and all of
 -- it's vertices lie on grid node.
 validFace :: Poly2 Number -> Boolean
-validFace poly = has3Or4Edges && onGridAndConvex
-  where
-    len = length poly
-    has3Or4Edges = len == 3 || len == 4
-    onGridAndConvex =
-      let o = (gridPrev <<< ceil) <$> origin poly
-          mpoly' = sequence $ toFaceCoords o <$> poly
-       in Just true == (isConvex <$> mpoly')
+validFace oPoly =
+  case prunePoly oPoly of
+    Nothing -> true
+    Just poly ->
+      let len = length poly
+          has3Or4Edges = len == 3 || len == 4
+          onGridAndConvex =
+            let o = (gridPrev <<< ceil) <$> origin poly
+                mpoly' = sequence $ toFaceCoords o <$> poly
+             in Just true == (isConvex <$> mpoly')
+        in has3Or4Edges && onGridAndConvex
 
 type Plane a = Array (Array a)
 
@@ -89,8 +92,7 @@ validatePoly poly =
       validity = for (0..((height / gridSize) - 1)) $ \y ->
                    for (0..((width / gridSize) - 1)) $ \x ->
                      let cs = square (toNumber gridSize) (toNumber <$> p2 x y ^* gridSize)
-                         intersection = clip cs oPoly
-                      in Identity (length intersection < 3 || validFace intersection)
+                      in Identity (maybe true validFace (clip cs oPoly))
   in { lo: plo, hi: phi, validity: runIdentity validity }
 
 -- toPlane :: Poly2 Int -> (P2 Int, Plane (Maybe Face))

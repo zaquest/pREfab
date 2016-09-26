@@ -1,12 +1,16 @@
-Task list (in that order):
+Task list:
 
- * Write tests for Linear
- * Write tests for Data.*
- * Fix sutherlandHodgeman, it creates empty polygons while it's working
  * Think how to DRY Data.Corner (clockWise, counterClockWise, isLine)
    and Data.Segment (outside, inside, onLine)
+ * Write tests for Linear _low priority_
 
 Done:
+
  * Set up test infrastructure with purescript-test-unit (22-09-2016)
  * Finish Data.Polygon (clip, simplify) (23-09-2016)
  * Make whole thing build again (25-09-2016)
+ * Fix sutherlandHodgeman, it creates empty polygons for inner
+   operation (25-09-2016)
+ * Write tests for Data.* (26-09-2016)
+ * validatePoly gives wrong results because of sutherlandHodgeman
+   (26-09-2016)

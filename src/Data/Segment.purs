@@ -6,6 +6,7 @@ module Data.Segment
      , outside
      , onLine
      , crossZ
+     , nearestPoint
      , distance
      ) where
 
@@ -13,7 +14,7 @@ import Prelude
 import Data.Maybe (Maybe(..))
 import Linear.R2 (P2(..), p2, (.-.), (.+^))
 import Linear.R2 (crossZ) as R2
-import Linear.Epsilon (class Epsilon, nearZero, (<~=), (>~=))
+import Linear.Epsilon (class Epsilon, nearZero, (<<), (>>))
 import Linear.Vector ((*^))
 import Linear.Metric (qd, dot)
 import Linear.Metric (distance) as LM
@@ -24,7 +25,7 @@ data Seg p = Seg p p
 -- | Represents segment in R2
 type Seg2 a = Seg (P2 a)
 
--- | Tries to find intersection point of two segments
+-- | Tries to find intersection point of two lines given by segments.
 intersection :: forall a. (Epsilon a, EuclideanRing a)
              => Seg2 a -> Seg2 a -> Maybe (P2 a)
 intersection (Seg (P2 {x: x1, y: y1}) (P2 {x: x2, y: y2}))
@@ -39,14 +40,17 @@ intersection (Seg (P2 {x: x1, y: y1}) (P2 {x: x2, y: y2}))
                in Just (p2 x y)
 
 -- | Counter clock-wise
+-- Same as Data.Corner.counterClockWise
 outside :: forall a. (Ring a, Epsilon a) => P2 a -> Seg2 a -> Boolean
-outside p seg = crossZ p seg <~= zero
+outside p seg = crossZ p seg >> zero
 
 -- | Clock-wise
+-- Same as Data.Corner.clockWise
 inside :: forall a. (Ring a, Epsilon a) => P2 a -> Seg2 a -> Boolean
-inside p seg = crossZ p seg >~= zero
+inside p seg = crossZ p seg << zero
 
 -- | Checks if point `p` lies on the same line as segment `seg`
+-- Same as Data.Corner.isLine
 onLine :: forall a. (Ring a, Epsilon a) => P2 a -> Seg2 a -> Boolean
 onLine p seg = nearZero (crossZ p seg)
 
@@ -71,5 +75,4 @@ nearestPoint p (Seg a b) = if nearZero len2 then a else proj
 
 -- | Minimal distance between point `p` and segment `ab`.
 distance :: P2 Number -> Seg2 Number -> Number
-distance p ab =
-  LM.distance p (nearestPoint p ab)
+distance p ab = LM.distance p (nearestPoint p ab)

@@ -2,24 +2,26 @@ module Data.Polygon
      ( Poly
      , Poly2
      , mkPoly
-     , points
-     , edges
-     , corners
+     , uncons
+     , updateAt
+     , insertAt
      , index
      , length
-     , rect
+     , points
+
+     , edges
+     , corners
+
      , origin
+     , rect
+     , square
+     , move
      , clockWise
      , sutherlandHodgman
      , clip
      , isConvex
      , prunePoly
-     , square
-     , move
      , containsPoint
-     , updateAt
-     , insertAt
-     , uncons
      ) where
 
 import Prelude
@@ -27,7 +29,7 @@ import Data.Int (odd)
 import Data.Monoid ((<>))
 import Data.Maybe (Maybe(..), maybe)
 import Data.Array ( length, uncons, snoc, zipWith, nub, updateAt
-                  , insertAt, fromFoldable ) as A
+                  , insertAt, fromFoldable, take, drop ) as A
 import Data.Array.Partial (unsafeIndex) as A
 import Partial.Unsafe (unsafePartial)
 import Data.Foldable (class Foldable, foldMap, foldl, foldr, all, sum)
@@ -61,6 +63,10 @@ edges (Poly ps) = case A.uncons ps of
                     Nothing -> bug "edges: got empty polygon"
                     Just {head, tail} ->
                       A.zipWith Seg ps (tail `A.snoc` head)
+
+rot :: forall a. Int -> Array a -> Array a
+rot n arr = A.drop n' arr <> A.take n' arr
+  where n' = n `quot` (A.length arr)
 
 corners :: forall p. Poly p -> Array (Corner p)
 corners (Poly ps0) = case mcs of
@@ -97,7 +103,7 @@ rect :: forall a. P2 a -> P2 a -> Poly2 a
 rect (P2 lo) (P2 hi) = Poly [ P2 lo
                             , p2 lo.x hi.y
                             , P2 hi
-                            , p2 hi.x hi.y ]
+                            , p2 hi.x lo.y ]
 
 square :: forall a. Semiring a => a -> P2 a -> Poly2 a
 square side lo = rect lo (lo + p2 side side)
@@ -122,15 +128,15 @@ sutherlandHodgman ::
      (P2 Number -> Seg2 Number -> Boolean)
   -> Poly2 Number  -- ^ Clip polygon (have to be convex)
   -> Poly2 Number  -- ^ Subject polygon
-  -> Poly2 Number  -- ^ Intersection
+  -> Maybe (Poly2 Number)  -- ^ Intersection
                    -- TODO: there's not always intersection
-sutherlandHodgman inside clipPoly subjPoly =
-  Poly <<< nub' $ flip execState (points subjPoly) $
-    for_ (edges clipPoly) $ \(Seg cs ce) -> do
+sutherlandHodgman inside (Poly clipPoly) (Poly subjPoly) =
+  mkPoly <<< nub' $ flip execState subjPoly $
+    for_ (ptEdges clipPoly) $ \(Seg cs ce) -> do
       let clipEdge = Seg cs ce
-      newPoly <- Poly <$> get
+      newPoly <- get
       put []
-      for_ (edges newPoly) $ \(Seg s e) ->
+      for_ (ptEdges newPoly) $ \(Seg s e) ->
         let subjEdge = Seg s e in
         if e `inside` clipEdge
            then do
@@ -142,10 +148,11 @@ sutherlandHodgman inside clipPoly subjPoly =
                modify $ maybe id add (intersection subjEdge clipEdge)
   where add = flip A.snoc
         nub' = map toExact <<< A.nub <<< map Approx
+        ptEdges ps = A.zipWith Seg ps (rot 1 ps)
 
 -- | https://en.wikipedia.org/wiki/Sutherland–Hodgman_algorithm
 -- `clipPoly` have to be convex
-clip :: Poly2 Number -> Poly2 Number -> Poly2 Number
+clip :: Poly2 Number -> Poly2 Number -> Maybe (Poly2 Number)
 clip clipPoly subjPoly =
   let inside = if clockWise clipPoly then S.inside else S.outside
    in sutherlandHodgman inside clipPoly subjPoly
@@ -162,8 +169,9 @@ type Chain2 a = Chain (P2 a)
 -- | Takes a polygonal chain and removes middle points of segments
 pruneChain :: forall a. (Ring a, Epsilon a) => Chain2 a -> Chain2 a
 pruneChain (L.Cons p0 ps0@(L.Cons p1 ps1@(L.Cons p2 _))) =
-  let tail = if isLine (Corner p0 p1 p2) then ps1 else ps0
-   in L.Cons p0 (pruneChain tail)
+  if isLine (Corner p0 p1 p2)
+     then pruneChain (L.Cons p0 ps1)
+     else L.Cons p0 (pruneChain ps0)
 pruneChain rest = rest
 
 polyToChain :: forall p. Poly p -> Chain p

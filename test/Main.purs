@@ -8,12 +8,13 @@ import Control.Monad.Aff.AVar (AVAR)
 import Test.Unit.Main (runTest)
 import Test.Unit.Console (TESTOUTPUT)
 
-import Test.Linear (linearSuite)
+import Test.Data (dataSuite)
 
 --main :: forall a. Eff (assert :: ASSERT | a) Unit
 main :: forall e. Eff ( console :: CONSOLE
-                        , testOutput :: TESTOUTPUT
-                        , avar :: AVAR | e )
-                      Unit 
+                      , testOutput :: TESTOUTPUT
+                      , avar :: AVAR
+                      | e )
+                      Unit
 main = runTest do
-  linearSuite
+  dataSuite

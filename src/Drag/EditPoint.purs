@@ -19,7 +19,6 @@ import Editor.WorkArea (EditPoint, mkWorkArea)
 import Drag.Drag (Drag)
 import Linear.Epsilon ((~=))
 import Utils (enumerate)
---import Trace (trace)
 
 onPoly :: Number
        -> Poly2 Number
