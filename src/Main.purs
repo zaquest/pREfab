@@ -4,6 +4,7 @@ import Prelude
 import Data.Polygon as Poly
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
+import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
 import DOM.HTML (window) as DOM
 import DOM.HTML.Window (innerHeight, innerWidth) as DOM
@@ -11,11 +12,11 @@ import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
 import Editor.Editor (mkEditor)
 import Editor.Render (drawWorkArea)
-import Graphics.Canvas (CANVAS, getCanvasElementById, getContext2D, setCanvasWidth, setCanvasHeight)
+import Graphics.Canvas ( CANVAS, getCanvasElementById, getContext2D
+                       , setCanvasWidth, setCanvasHeight )
 import Grid (CGrid)
 import Interactive (setUpHandlers)
 import Linear.R2 (p2)
-import Ref (REF)
 import Utils (fromJust)
 
 --showValidity (Editor e) =
@@ -26,7 +27,13 @@ import Utils (fromJust)
 poly :: Poly.Poly2 CGrid
 poly = fromJust $ Poly.mkPoly [p2 0 2, p2 16 0, p2 8 8, p2 (-1) 16]
 
-main :: forall e. Eff (canvas :: CANVAS, dom :: DOM, console :: CONSOLE, ref :: REF | e) Unit
+main :: forall e
+      . Eff ( canvas :: CANVAS
+            , dom :: DOM
+            , console :: CONSOLE
+            , ref :: REF
+            | e)
+            Unit
 main = do
   window <- DOM.window
   width <- toNumber <$> DOM.innerWidth window

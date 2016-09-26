@@ -5,9 +5,12 @@ import Data.Monoid ((<>))
 import Data.Maybe (Maybe(..), maybe)
 import Data.Maybe.First (First(..), runFirst)
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Ref ( REF, Ref, newRef, readRef, modifyRef
+                             , modifyRef' )
 import Graphics.Canvas (CANVAS)
-import Control.Monad.Eff.Console (CONSOLE, logShow{-, log-})
-import Control.Monad.Eff.JQuery (JQueryEvent, JQuery, select, on, getValue, preventDefault)
+import Control.Monad.Eff.Console (CONSOLE, logShow)
+import Control.Monad.Eff.JQuery ( JQueryEvent, JQuery, select, on
+                                , getValue, preventDefault )
 import DOM (DOM)
 import JQuery (clientX, clientY)
 import Data.Foreign (readString)
@@ -15,7 +18,6 @@ import Data.Either (Either(..))
 import Data.Int (fromString)
 import Data.Bifunctor (lmap)
 
-import Ref (REF, Ref, newRef, readRef, {-writeRef,-} modifyRef)
 import Linear.R2 (p2, P2)
 import Editor.Editor (Editor)
 import Editor.Render (drawWorkArea)
@@ -72,12 +74,13 @@ onMouseUp :: forall e
                  | e ) Unit
 onMouseUp stateRef event jq = do
   current <- mouseXY event
-  s' <- modifyRef stateRef \s ->
-    case s.drag of
-      Nothing -> s
-      Just drag -> { drag: Nothing
-                   , editor: drag.stop current }
-  drawWorkArea s'.editor
+  editor <- modifyRef' stateRef \s ->
+    let ds = case s.drag of
+               Nothing -> s
+               Just drag -> { drag: Nothing
+                            , editor: drag.stop current }
+    in { state: ds, value: ds.editor }
+  drawWorkArea editor
 
 onZoom :: forall e
         . Boolean
@@ -91,12 +94,13 @@ onZoom :: forall e
               | e ) Unit
 onZoom zoomIn stateRef event jq = do
   preventDefault event
-  s' <- modifyRef stateRef \s ->
-    let z = s.editor.view.zoom + diff
-    in if 0.2 <= z
-        then s { editor = s.editor { view = s.editor.view { zoom = z } } }
-        else s
-  drawWorkArea s'.editor
+  editor <- modifyRef' stateRef \s ->
+    let z = s.editor.view.zoom + diff in
+    let zs = if 0.2 <= z
+                then s { editor = s.editor { view = s.editor.view { zoom = z } } }
+                else s
+     in { state: zs, value: zs.editor }
+  drawWorkArea editor
   where diff = if zoomIn then 0.1 else -0.1
 
 onSave :: forall e
