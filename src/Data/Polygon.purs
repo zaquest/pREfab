@@ -87,6 +87,11 @@ index (Poly ps) n = unsafePartial $
 length :: forall p. Poly p -> Int
 length (Poly ps) = A.length ps
 
+-- waiting for 0.10.1
+--derive newtype instance polyFunctor :: Functor Poly
+--derive newtype instance polyFoldable :: Foldable Poly
+--derive newtype instance polyTraversable :: Traversable Poly
+
 instance polyFunctor :: Functor Poly where
   map f (Poly ps) = Poly (f <$> ps)
 
@@ -98,6 +103,9 @@ instance polyFoldable :: Foldable Poly where
 instance polyTraversable :: Traversable Poly where
   sequence (Poly ps) = Poly <$> sequence ps
   traverse f (Poly ps) = Poly <$> traverse f ps
+
+instance showPoly :: Show p => Show (Poly p) where
+  show (Poly ps) = "(Poly " <> show ps <> ")"
 
 rect :: forall a. P2 a -> P2 a -> Poly2 a
 rect (P2 lo) (P2 hi) = Poly [ P2 lo

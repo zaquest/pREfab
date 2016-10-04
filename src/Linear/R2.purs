@@ -152,10 +152,10 @@ instance p2Foldable :: Foldable P2 where
   foldr f acc (P2 {x, y}) = f x (f y acc)
 
 instance v2Show :: Show a => Show (V2 a) where
-  show (V2 {x: x, y: y}) = "V2 " <> show x <> " " <> show y
+  show (V2 {x: x, y: y}) = "(V2 " <> show x <> " " <> show y <> ")"
 
 instance p2Show :: Show a => Show (P2 a) where
-  show (P2 {x: x, y: y}) = "P2 " <> show x <> " " <> show y
+  show (P2 {x: x, y: y}) = "(P2 " <> show x <> " " <> show y <> ")"
 
 -- point-vector ops
 pAddV :: forall a. Semiring a => P2 a -> V2 a -> P2 a

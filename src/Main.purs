@@ -18,6 +18,7 @@ import Grid (CGrid)
 import Interactive (setUpHandlers)
 import Linear.R2 (p2)
 import Utils (fromJust)
+import Put (PUT)
 
 --showValidity (Editor e) =
 --  case e.validity of
@@ -32,6 +33,7 @@ main :: forall e
             , dom :: DOM
             , console :: CONSOLE
             , ref :: REF
+            , put :: PUT
             | e)
             Unit
 main = do

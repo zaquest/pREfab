@@ -2,17 +2,17 @@ Task list:
 
  * Think how to DRY Data.Corner (clockWise, counterClockWise, isLine)
    and Data.Segment (outside, inside, onLine)
- * Any way to generate binary files in purescript? Do I have to write
-   my own? Look at purescript-arraybuffer-types.
- * Implement prefab file generation
  * Write tests for Linear _low priority_
+ * Redraw on resize (if possible at all)
+ * Waiting for 0.10.1 in Arch repos for tests
 
-Whish list:
+Wish list:
 
  * Editing history (undo/redo) purescript-localstorage
  * Polygons history (list of polygons that were edited previously)
    purescript-localstorage
  * Polygon exporting/importing
+ * Image background
 
 Done:
 
@@ -24,3 +24,7 @@ Done:
  * Write tests for Data.* (26-09-2016)
  * validatePoly gives wrong results because of sutherlandHodgeman
    (26-09-2016)
+ * Any way to generate binary files in purescript? Do I have to write
+   my own? Look at purescript-arraybuffer-types. (wrote my own)
+   (03-10-2016)
+ * Implement prefab file generation (04-10-2016)

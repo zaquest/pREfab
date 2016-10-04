@@ -5,15 +5,14 @@ module Data.Segment
      , inside
      , outside
      , onLine
-     , crossZ
      , nearestPoint
      , distance
+     , ends
      ) where
 
 import Prelude
 import Data.Maybe (Maybe(..))
-import Linear.R2 (P2(..), p2, (.-.), (.+^))
-import Linear.R2 (crossZ) as R2
+import Linear.R2 (P2(..), p2, (.-.), (.+^), crossZ)
 import Linear.Epsilon (class Epsilon, nearZero, (<<), (>>))
 import Linear.Vector ((*^))
 import Linear.Metric (qd, dot)
@@ -24,6 +23,15 @@ data Seg p = Seg p p
 
 -- | Represents segment in R2
 type Seg2 a = Seg (P2 a)
+
+instance segEq :: Eq p => Eq (Seg p) where
+  eq (Seg s e) (Seg s' e') = s == s' && e == e'
+
+instance functorSeg :: Functor Seg where
+  map f (Seg s e) = Seg (f s) (f e)
+
+instance showSeg :: Show p => Show (Seg p) where
+  show (Seg s e) = "(Seg " <> show s <> " " <> show e <> ")"
 
 -- | Tries to find intersection point of two lines given by segments.
 intersection :: forall a. (Epsilon a, EuclideanRing a)
@@ -39,25 +47,22 @@ intersection (Seg (P2 {x: x1, y: y1}) (P2 {x: x2, y: y2}))
                   y = (c12 * (y3 - y4) - (y1 - y2) * c34) / denom
                in Just (p2 x y)
 
+-- (Corner s e p)
+
 -- | Counter clock-wise
 -- Same as Data.Corner.counterClockWise
 outside :: forall a. (Ring a, Epsilon a) => P2 a -> Seg2 a -> Boolean
-outside p seg = crossZ p seg >> zero
+outside p (Seg s e) = crossZ (e .-. s) (p .-. e) >> zero
 
 -- | Clock-wise
 -- Same as Data.Corner.clockWise
 inside :: forall a. (Ring a, Epsilon a) => P2 a -> Seg2 a -> Boolean
-inside p seg = crossZ p seg << zero
+inside p (Seg s e) = crossZ (e .-. s) (p .-. e) << zero
 
 -- | Checks if point `p` lies on the same line as segment `seg`
 -- Same as Data.Corner.isLine
 onLine :: forall a. (Ring a, Epsilon a) => P2 a -> Seg2 a -> Boolean
-onLine p seg = nearZero (crossZ p seg)
-
--- | Corner s e p
-crossZ :: forall a. (Ring a, Epsilon a) => P2 a -> Seg2 a -> a
-crossZ p (Seg s e) = R2.crossZ (e .-. s) (p .-. e)
-{-# INLINE crossZ #-}
+onLine p (Seg s e) = nearZero (crossZ (e .-. s) (p .-. e))
 
 -- | Returns nearest `ab` segment point to point `p`
 -- http://stackoverflow.com/a/1501725
@@ -76,3 +81,6 @@ nearestPoint p (Seg a b) = if nearZero len2 then a else proj
 -- | Minimal distance between point `p` and segment `ab`.
 distance :: P2 Number -> Seg2 Number -> Number
 distance p ab = LM.distance p (nearestPoint p ab)
+
+ends :: forall p. Seg p -> Array p
+ends (Seg s e) = [s, e]

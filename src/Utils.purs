@@ -6,16 +6,18 @@ module Utils
      , quot
      , fromJust
      , zipWith3
+     , replicateA_
      ) where
 
 import Prelude
-import Data.Traversable (class Traversable, for)
+import Data.Traversable (class Traversable, for, traverse_)
 import Data.Foldable (class Foldable, foldl)
 import Data.Maybe (Maybe(..))
 import Data.Maybe (fromJust) as M
 import Control.Monad.Transformerless.State (evalState, put, get)
 import Partial.Unsafe (unsafePartial, unsafeCrashWith)
 import Data.Array (zipWith) as A
+import Data.Array ((..))
 
 foldlA2 :: forall t f a. (Foldable t, Applicative f)
         => (a -> a -> a) -> t (f a) -> Maybe (f a)
@@ -57,3 +59,6 @@ zipWith3 :: forall a b c d
          -> Array c
          -> Array d
 zipWith3 f as bs = A.zipWith ($) (A.zipWith f as bs)
+
+replicateA_ :: forall m a. Applicative m => Int -> m a -> m Unit
+replicateA_ n m = traverse_ (\_ -> m) (1..n)

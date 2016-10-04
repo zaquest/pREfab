@@ -66,6 +66,7 @@
     }
 </style>
         <script language="javascript" src="jquery-1.10.1.min.js"/></script>
+        <script language="javascript" src="pako_deflate.min.js"/></script>
     </head>
     <body>
         <ul id="panel">
@@ -76,22 +77,6 @@
             <li class="panel-item panel-button" id="save">save</li>
         </ul>
         <canvas id="work-area"></canvas>
-        <script>
-            function save_data_as_file(data, filename) {
-                var blob = new Blob([data.u8], {type: 'application/oebr'});
-                if(window.navigator.msSaveOrOpenBlob) {
-                    window.navigator.msSaveBlob(blob, filename);
-                }
-                else{
-                    var elem = window.document.createElement('a');
-                    elem.href = window.URL.createObjectURL(blob);
-                    elem.download = filename;
-                    document.body.appendChild(elem)
-                    elem.click();
-                    document.body.removeChild(elem);
-                }
-            }
-        </script>
         <script language="javascript" src="out.js"></script>
     </body>
 </html>
