@@ -25,3 +25,9 @@ exports.saveAsFile = function (filename) {
         };
     };
 };
+
+exports.jsAlert = function (msg) {
+    return function () {
+        window.alert(msg);
+    };
+};

@@ -13,7 +13,7 @@ gridSize = 8
 
 -- | Find previous/next point on the grid
 gridPrev :: CGrid -> CGrid
-gridPrev x = (x `div` gridSize) * gridSize - (if x < 0 then gridSize else 0)
+gridPrev x = (x `div` gridSize) * gridSize - (if x `mod` gridSize < 0 then gridSize else 0)
 
 gridNext :: CGrid -> CGrid
 gridNext x = gridPrev (x + (gridSize - 1))

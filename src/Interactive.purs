@@ -1,7 +1,7 @@
 module Interactive where
 
 import Prelude
-import Data.Array (concat, concatMap, (..))
+import Data.Array (concatMap, (..))
 import Data.Monoid ((<>))
 import Data.Maybe (Maybe(..), maybe)
 import Data.Maybe.First (First(..), runFirst)
@@ -33,12 +33,9 @@ import RedEclipse.Prefab ( Prefab(..), PrefabFile(..)
                          , PrefabHeader(..), PrefabGeom(..)
                          , defaultPrefabFileHeader, mapzIVec3 )
 import RedEclipse.Face (toPlane)
-import Trace (trace)
 
 type State = { drag :: Maybe Drag
              , editor :: Editor }
-
---type PointDrag = Poly2 CGrid -> Either (P2 CGrid) (Edge2 CGrid) -> P2 CGrid -> Poly2 CGrid
 
 mouseXY :: forall e. JQueryEvent -> Eff (dom :: DOM | e) (P2 Number)
 mouseXY e = p2 <$> clientX e <*> clientY e
@@ -114,6 +111,7 @@ onZoom zoomIn stateRef event jq = do
   where diff = if zoomIn then 0.1 else -0.1
 
 foreign import saveAsFile :: forall e. String -> Output -> Eff ( dom :: DOM | e ) Unit
+foreign import jsAlert :: forall e. String -> Eff ( dom :: DOM | e ) Unit
 
 onSave :: forall e
         . Ref State
@@ -138,9 +136,9 @@ onSave stateRef event jq = do
       state <- readRef stateRef
       let poly = state.editor.workArea.poly
       case toPlane poly of
-        Nothing -> log "Invalid polygon"
+        Nothing ->  jsAlert "Invalid polygon"
         Just plane -> do
-          let geom = PrefabGeom $ map Leaf (concatMap (\ys -> concatMap (\z -> map (\_ -> z) (1..depth)) ys) (trace plane.plane))
+          let geom = PrefabGeom $ map Leaf (concatMap (\ys -> concatMap (\z -> map (\_ -> z) (1..depth)) ys) plane.plane)
 
           -- produce prefab file
           let phdr = PrefabHeader { orients: mapzIVec3 0 0 0 -- not important
