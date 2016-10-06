@@ -12,7 +12,8 @@ import Graphics.Canvas (CANVAS)
 import Canvas as C
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.JQuery ( JQueryEvent, JQuery, select, on
-                                , getValue, preventDefault )
+                                , getValue, preventDefault
+                                , addClass, removeClass )
 import DOM.WebStorage (STORAGE, ForeignStorage)
 import DOM (DOM)
 import Window as W
@@ -101,6 +102,7 @@ onMouseUp stateRef event jq = do
       writeRef stateRef (s { editor = e, history = h, drag = Nothing })
       drawWorkArea e
       saveHistory s.storage h
+      updateHistoryUI h
 
 onZoom :: forall e
         . Boolean
@@ -201,6 +203,7 @@ onUndo stateRef = do
     Just state -> do
       drawWorkArea state.editor
       saveHistory state.storage state.history
+      updateHistoryUI state.history
 
 onRedo :: forall e
         . Ref State
@@ -223,6 +226,7 @@ onRedo stateRef = do
     Just state -> do
       drawWorkArea state.editor
       saveHistory state.storage state.history
+      updateHistoryUI state.history
 
 onReset :: forall e
          . Ref State
@@ -234,11 +238,33 @@ onReset :: forall e
 onReset stateRef = do
   result <- modifyRef' stateRef \s ->
     let e = s.editor { workArea = mkWorkArea defaultPoly }
-        h = H.push s.history defaultPoly
+        h = if H.present s.history == defaultPoly
+               then s.history
+               else H.push s.history defaultPoly
         s' = s { editor = e, history = h }
      in { state: s', value: s' }
   drawWorkArea result.editor
   saveHistory result.storage result.history
+  updateHistoryUI result.history
+
+updateHistoryUI :: forall e a
+                 . History a
+                -> Eff ( dom :: DOM | e ) Unit
+updateHistoryUI h = do
+  if H.undoSize h == 0
+     then deactivate "#undo"
+     else activate "#undo"
+  if H.redoSize h == 0
+     then deactivate "#redo"
+     else activate "#redo"
+  where
+    inactiveClassName = "panel-button-inactive"
+    activate target = do
+      jq <- select target
+      removeClass inactiveClassName jq
+    deactivate target = do
+      jq <- select target
+      addClass inactiveClassName jq
 
 setUpHandlers :: forall e
                . Editor
@@ -273,3 +299,4 @@ setUpHandlers editor storage history = do
   on "click" (\_ _ -> onRedo stateRef) jqRedo
   jqReset <- select "#reset"
   on "click" (\_ _ -> onReset stateRef) jqReset
+  updateHistoryUI history

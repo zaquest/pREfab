@@ -23,7 +23,7 @@
         top: 0;
         left: 0;
         margin: 0;
-        background: #505050;
+        background-color: #505050;
         box-sizing: border-box;
     }
     #panel .panel-item {
@@ -35,7 +35,7 @@
     #panel .panel-button {
         cursor: pointer;
         text-align: center;
-        background: #e0e0e0;
+        background-color: #e0e0e0;
         border: 1px solid black;
         border-radius: 5px;
         font-size: 15pt;
@@ -43,7 +43,15 @@
         -moz-user-select: none;
     }
     #panel .panel-button:hover {
-        background: #b0b0b0;
+        background-color: #b0b0b0;
+    }
+    #panel .panel-button-inactive {
+        cursor: default;
+        color: #b0b0b0;
+        border-color: #b0b0b0;
+    }
+    #panel .panel-button-inactive:hover {
+        background-color: #e0e0e0;
     }
     #panel .zoom, #panel .history {
         width: 35px;

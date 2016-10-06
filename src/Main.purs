@@ -31,7 +31,7 @@ main :: forall e
 main = do
   storage <- getLocalStorage
   mhistory <- loadHistory storage
-  let history = fromMaybe (H.start defaultPoly) mhistory
+  let history = fromMaybe (H.start defaultPoly 20 30) mhistory
   {width, height} <- W.getSize
   canvas <- fromJust <$> getCanvasElementById "work-area"
   setCanvasWidth width canvas
