@@ -7,17 +7,19 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Maybe.First (First(..), runFirst)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Ref ( REF, Ref, newRef, readRef, modifyRef
-                             , modifyRef' )
-import Graphics.Canvas (CANVAS)
+                             , modifyRef', writeRef )
+import Graphics.Canvas ( CANVAS, setCanvasWidth, setCanvasHeight
+                       , CanvasElement, Context2D )
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.JQuery ( JQueryEvent, JQuery, select, on
                                 , getValue, preventDefault )
 import DOM (DOM)
+import Window as W
 import JQuery (clientX, clientY)
 import Data.Foreign (readString)
 import Data.Either (Either(..))
-import Data.Int (fromString)
 import Data.Bifunctor (lmap)
+import Data.Int (fromString)
 
 import Linear.R2 (p2, P2, r2)
 import Editor.Editor (Editor)
@@ -152,6 +154,26 @@ onSave stateRef event jq = do
           runPut (put pfile) output
           saveAsFile "prefab.obr" output
 
+foreign import getContextCanvas :: Context2D -> CanvasElement
+
+onResize :: forall e
+          . Ref State
+         -> Eff ( console :: CONSOLE
+                , dom     :: DOM
+                , ref     :: REF
+                , canvas  :: CANVAS
+                , put     :: PUT
+                | e ) Unit
+onResize stateRef = do
+  s <- readRef stateRef
+  let canvas = getContextCanvas s.editor.context
+  {width, height} <- W.getSize
+  setCanvasWidth width canvas
+  setCanvasHeight height canvas
+  let s' = s { editor = s.editor { view = s.editor.view { width = width, height = height } } }
+  writeRef stateRef s'
+  drawWorkArea s'.editor
+
 setUpHandlers :: forall e
                . Editor
               -> Eff ( console :: CONSOLE
@@ -172,3 +194,4 @@ setUpHandlers editor = do
   on "click" (onZoom false stateRef) jqZoomOut
   jqSave <- select "#save"
   on "click" (onSave stateRef) jqSave
+  W.onResize (\_ -> onResize stateRef)
