@@ -31,5 +31,3 @@ exports.jsAlert = function (msg) {
         window.alert(msg);
     };
 };
-
-exports.getContextCanvas = function (ctx) { return ctx.canvas; }

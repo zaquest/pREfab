@@ -10,17 +10,21 @@ import Linear.Vector ( class Additive, defaultZero, defaultVAddV
 import Linear.Metric ( class Metric, defaultDot, defaultQuadrance
                      , defaultQd, defaultDistance, defaultNorm
                      , defaultSignorm )
+import Data.Generic (class Generic)
 
 type R2Rec a = { x :: a, y :: a }
 
-newtype V2 a = V2 (R2Rec a)
-newtype P2 a = P2 (R2Rec a)
+newtype V2 a = V2 { x :: a, y :: a }
+newtype P2 a = P2 { x :: a, y :: a }
 
 v2 :: forall a. a -> a -> V2 a
 v2 x y = V2 {x: x, y: y} {-# INLINE v2 #-}
 
 p2 :: forall a. a -> a -> P2 a
 p2 x y = P2 {x: x, y: y} {-# INLINE p2 #-}
+
+derive instance genericV2 :: Generic a => Generic (V2 a)
+derive instance genericP2 :: Generic a => Generic (P2 a)
 
 class R2 t where
   r2 :: forall a. t a -> R2Rec a

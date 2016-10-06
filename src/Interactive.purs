@@ -8,11 +8,12 @@ import Data.Maybe.First (First(..), runFirst)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Ref ( REF, Ref, newRef, readRef, modifyRef
                              , modifyRef', writeRef )
-import Graphics.Canvas ( CANVAS, setCanvasWidth, setCanvasHeight
-                       , CanvasElement, Context2D )
+import Graphics.Canvas (CANVAS)
+import Canvas as C
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.JQuery ( JQueryEvent, JQuery, select, on
                                 , getValue, preventDefault )
+import DOM.WebStorage (STORAGE, ForeignStorage)
 import DOM (DOM)
 import Window as W
 import JQuery (clientX, clientY)
@@ -24,6 +25,7 @@ import Data.Int (fromString)
 import Linear.R2 (p2, P2, r2)
 import Editor.Editor (Editor)
 import Editor.Render (drawWorkArea)
+import Editor.WorkArea (mkWorkArea)
 import Drag.Drag (Drag)
 import Drag.Scroll (scrollDrag)
 import Drag.EditPoint (editPointDrag)
@@ -35,9 +37,16 @@ import RedEclipse.Prefab ( Prefab(..), PrefabFile(..)
                          , PrefabHeader(..), PrefabGeom(..)
                          , defaultPrefabFileHeader, mapzIVec3 )
 import RedEclipse.Face (toPlane)
+import History (History)
+import History as H
+import Storage (saveHistory)
+import Data.Polygon (defaultPoly, Poly2)
+import Grid (CGrid)
 
 type State = { drag :: Maybe Drag
-             , editor :: Editor }
+             , editor :: Editor
+             , storage :: ForeignStorage
+             , history :: History (Poly2 CGrid) }
 
 mouseXY :: forall e. JQueryEvent -> Eff (dom :: DOM | e) (P2 Number)
 mouseXY e = p2 <$> clientX e <*> clientY e
@@ -46,8 +55,7 @@ onMouseDown :: forall e
              . Ref State
             -> JQueryEvent
             -> JQuery
-            -> Eff ( console :: CONSOLE
-                   , dom     :: DOM
+            -> Eff ( dom     :: DOM
                    , ref     :: REF
                    | e ) Unit
 onMouseDown stateRef event jq = void do
@@ -60,10 +68,9 @@ onMouseMove :: forall e
              . Ref State
             -> JQueryEvent
             -> JQuery
-            -> Eff ( console :: CONSOLE
+            -> Eff ( canvas  :: CANVAS
                    , dom     :: DOM
                    , ref     :: REF
-                   , canvas  :: CANVAS
                    | e ) Unit
 onMouseMove stateRef event jq = do
   state <- readRef stateRef
@@ -76,30 +83,33 @@ onMouseUp :: forall e
            . Ref State
           -> JQueryEvent
           -> JQuery
-          -> Eff ( console :: CONSOLE
+          -> Eff ( canvas  :: CANVAS
                  , dom     :: DOM
                  , ref     :: REF
-                 , canvas  :: CANVAS
+                 , storage :: STORAGE
                  | e ) Unit
 onMouseUp stateRef event jq = do
   current <- mouseXY event
-  editor <- modifyRef' stateRef \s ->
-    let ds = case s.drag of
-               Nothing -> s
-               Just drag -> { drag: Nothing
-                            , editor: drag.stop current }
-    in { state: ds, value: ds.editor }
-  drawWorkArea editor
+  s <- readRef stateRef
+  case s.drag of
+    Nothing -> pure unit
+    Just drag -> do
+      let e = drag.stop current
+      let h = if H.present s.history == e.workArea.poly
+                then s.history
+                else H.push s.history e.workArea.poly
+      writeRef stateRef (s { editor = e, history = h, drag = Nothing })
+      drawWorkArea e
+      saveHistory s.storage h
 
 onZoom :: forall e
         . Boolean
        -> Ref State
        -> JQueryEvent
        -> JQuery
-       -> Eff ( console :: CONSOLE
+       -> Eff ( canvas  :: CANVAS
               , dom     :: DOM
               , ref     :: REF
-              , canvas  :: CANVAS
               | e ) Unit
 onZoom zoomIn stateRef event jq = do
   preventDefault event
@@ -119,11 +129,11 @@ onSave :: forall e
         . Ref State
        -> JQueryEvent
        -> JQuery
-       -> Eff ( console :: CONSOLE
+       -> Eff ( canvas  :: CANVAS
+              , console :: CONSOLE
               , dom     :: DOM
-              , ref     :: REF
-              , canvas  :: CANVAS
               , put     :: PUT
+              , ref     :: REF
               | e ) Unit
 onSave stateRef event jq = do
   preventDefault event
@@ -154,36 +164,98 @@ onSave stateRef event jq = do
           runPut (put pfile) output
           saveAsFile "prefab.obr" output
 
-foreign import getContextCanvas :: Context2D -> CanvasElement
-
 onResize :: forall e
           . Ref State
-         -> Eff ( console :: CONSOLE
+         -> Eff ( canvas  :: CANVAS
                 , dom     :: DOM
                 , ref     :: REF
-                , canvas  :: CANVAS
-                , put     :: PUT
                 | e ) Unit
 onResize stateRef = do
   s <- readRef stateRef
-  let canvas = getContextCanvas s.editor.context
-  {width, height} <- W.getSize
-  setCanvasWidth width canvas
-  setCanvasHeight height canvas
+  let canvas = C.contextCanvas s.editor.context
+  size@{width, height} <- W.getSize
+  C.setSize canvas size
   let s' = s { editor = s.editor { view = s.editor.view { width = width, height = height } } }
   writeRef stateRef s'
   drawWorkArea s'.editor
 
+-- TODO: merge undo/redo here
+onUndo :: forall e
+        . Ref State
+       -> Eff ( canvas :: CANVAS
+              , dom     :: DOM
+              , ref     :: REF
+              , storage :: STORAGE
+              | e ) Unit
+onUndo stateRef = do
+  result <- modifyRef' stateRef \s ->
+    let hp = H.undo s.history
+     in case hp.value of
+          Nothing -> { state: s, value: Nothing }
+          Just poly ->
+            let e = s.editor { workArea = mkWorkArea poly }
+                s' = s { editor = e, history = hp.state }
+             in { state: s', value: Just s' }
+  case result of
+    Nothing -> pure unit
+    Just state -> do
+      drawWorkArea state.editor
+      saveHistory state.storage state.history
+
+onRedo :: forall e
+        . Ref State
+       -> Eff ( canvas :: CANVAS
+              , dom     :: DOM
+              , ref     :: REF
+              , storage :: STORAGE
+              | e ) Unit
+onRedo stateRef = do
+  result <- modifyRef' stateRef \s ->
+    let hp = H.redo s.history
+     in case hp.value of
+          Nothing -> { state: s, value: Nothing }
+          Just poly ->
+            let e = s.editor { workArea = mkWorkArea poly }
+                s' = s { editor = e, history = hp.state }
+             in { state: s', value: Just s' }
+  case result of
+    Nothing -> pure unit
+    Just state -> do
+      drawWorkArea state.editor
+      saveHistory state.storage state.history
+
+onReset :: forall e
+         . Ref State
+        -> Eff ( canvas :: CANVAS
+               , dom     :: DOM
+               , ref     :: REF
+               , storage :: STORAGE
+               | e ) Unit
+onReset stateRef = do
+  result <- modifyRef' stateRef \s ->
+    let e = s.editor { workArea = mkWorkArea defaultPoly }
+        h = H.push s.history defaultPoly
+        s' = s { editor = e, history = h }
+     in { state: s', value: s' }
+  drawWorkArea result.editor
+  saveHistory result.storage result.history
+
 setUpHandlers :: forall e
                . Editor
-              -> Eff ( console :: CONSOLE
-                     , ref     :: REF
+              -> ForeignStorage
+              -> History (Poly2 CGrid)
+              -> Eff ( canvas  :: CANVAS
+                     , console :: CONSOLE
                      , dom     :: DOM
-                     , canvas  :: CANVAS
                      , put     :: PUT
+                     , ref     :: REF
+                     , storage :: STORAGE
                      | e ) Unit
-setUpHandlers editor = do
-  stateRef <- newRef { drag: Nothing, editor: editor }
+setUpHandlers editor storage history = do
+  stateRef <- newRef { drag: Nothing
+                     , editor: editor
+                     , storage: storage
+                     , history: history }
   jq <- select "#work-area"
   on "mousedown" (onMouseDown stateRef) jq
   on "mousemove" (onMouseMove stateRef) jq
@@ -195,3 +267,9 @@ setUpHandlers editor = do
   jqSave <- select "#save"
   on "click" (onSave stateRef) jqSave
   W.onResize (\_ -> onResize stateRef)
+  jqUndo <- select "#undo"
+  on "click" (\_ _ -> onUndo stateRef) jqUndo
+  jqRedo <- select "#redo"
+  on "click" (\_ _ -> onRedo stateRef) jqRedo
+  jqReset <- select "#reset"
+  on "click" (\_ _ -> onReset stateRef) jqReset

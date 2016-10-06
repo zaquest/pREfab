@@ -22,6 +22,8 @@ module Data.Polygon
      , isConvex
      , prunePoly
      , containsPoint
+
+     , defaultPoly
      ) where
 
 import Prelude
@@ -47,6 +49,8 @@ import Data.Segment (inside, outside) as S
 import Data.Corner (Corner(..), isLine)
 import Data.Corner (clockWise, crossZ) as C
 import Utils (bug, quot, foldlA2, fromJust, zipWith3)
+import Data.Generic (class Generic)
+import Grid (CGrid)
 
 newtype Poly p = Poly (Array p)
 type Poly2 a = Poly (P2 a)
@@ -91,6 +95,11 @@ length (Poly ps) = A.length ps
 --derive newtype instance polyFunctor :: Functor Poly
 --derive newtype instance polyFoldable :: Foldable Poly
 --derive newtype instance polyTraversable :: Traversable Poly
+
+derive instance genericPoly :: Generic p => Generic (Poly p)
+
+instance eqPoly :: Eq p => Eq (Poly p) where
+  eq (Poly p1) (Poly p2) = p1 == p2
 
 instance polyFunctor :: Functor Poly where
   map f (Poly ps) = Poly (f <$> ps)
@@ -223,3 +232,6 @@ insertAt idx p (Poly ps) = Poly (fromJust (A.insertAt idx' p ps))
 
 uncons :: forall p. Poly p -> {head :: p, tail :: Array p}
 uncons (Poly ps) = fromJust (A.uncons ps)
+
+defaultPoly :: Poly2 CGrid
+defaultPoly = fromJust $ mkPoly [p2 0 2, p2 16 0, p2 8 8, p2 (-1) 16]

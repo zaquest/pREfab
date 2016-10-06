@@ -15,4 +15,5 @@ getSize = do
   height <- toNumber <$> DOM.innerHeight window
   pure { width, height }
 
-foreign import onResize :: forall e. (Event -> Eff e Unit) -> Eff ( dom :: DOM | e ) Unit
+-- Had to add DOM to the passed function. Why?
+foreign import onResize :: forall e. (Event -> Eff ( dom :: DOM | e ) Unit) -> Eff ( dom :: DOM | e ) Unit
