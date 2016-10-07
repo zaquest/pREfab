@@ -196,7 +196,7 @@ assignSide :: { width :: Number, height :: Number }
            -> P2 Number
            -> Side
 assignSide {width, height} seg@(Seg (P2 s) (P2 e)) (P2 p) =
-  if proj _.x seg / width >= proj _.y seg / height
+  if rpx > rpy || rpx ~= rpy && px > py
      then -- horizontal
        let y = (p.x - s.x) / (e.x - s.x) * (e.y - s.y) + s.y
         in if p.y < y then SUp else SDown
@@ -204,6 +204,10 @@ assignSide {width, height} seg@(Seg (P2 s) (P2 e)) (P2 p) =
        let x = (p.y - s.y) / (e.y - s.y) * (e.x - s.x) + s.x
         in if p.x < x then SRight else SLeft
   where proj g (Seg (P2 s) (P2 e)) = abs (g s - g e)
+        px = proj _.x seg
+        py = proj _.y seg
+        rpx = px / width
+        rpy = py / height
 
 -- | Fails if side has already been set
 setEdge :: Face (Maybe (Seg2 CGrid)) -> Side -> Seg2 CGrid -> Maybe (Face (Maybe (Seg2 CGrid)))
