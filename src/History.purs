@@ -54,14 +54,16 @@ redo (History h@{prev, cur, next: Cons p ps, nextSize}) =
 push :: forall a. History a -> a -> History a
 push (History history) p =
   let size = history.size - history.nextSize + 1
-      prev = if size > history.maxSize
-                then take history.recycleSize history.prev
-                else history.prev
-   in History history { prev = Cons history.cur prev
+      ps = if size > history.maxSize
+              then { prev: take history.recycleSize history.prev
+                   , size: history.recycleSize }
+              else { prev: history.prev
+                   , size: size }
+   in History history { prev = Cons history.cur ps.prev
                       , cur = p
                       , next = Nil
                       , nextSize = 0
-                      , size = size }
+                      , size = ps.size }
 
 present :: forall a. History a -> a
 present (History {cur}) = cur
