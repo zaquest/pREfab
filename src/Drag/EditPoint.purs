@@ -2,7 +2,8 @@ module Drag.EditPoint where
 
 import Prelude
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Maybe.First (First(..), runFirst)
+import Data.Maybe.First (First(..))
+import Data.Newtype (unwrap)
 import Data.Foldable (foldMap)
 
 import Linear.R2 (P2)
@@ -17,7 +18,6 @@ import Grid (CGrid)
 import Editor.View (fromGrid, toGrid)
 import Editor.WorkArea (EditPoint, mkWorkArea)
 import Drag.Drag (Drag)
-import Linear.Epsilon ((~=))
 import Utils (enumerate)
 
 onPoly :: Number
@@ -25,7 +25,7 @@ onPoly :: Number
        -> P2 Number
        -> Maybe { point :: EditPoint Number
                 , finish :: P2 Number -> Poly2 Number }
-onPoly dist poly p = runFirst (firstPoint <> firstEdge)
+onPoly dist poly p = unwrap (firstPoint <> firstEdge)
   where
     firstPoint = foldMap (First <<< point) (enumerate (corners poly))
     firstEdge = foldMap (First <<< edge) (enumerate (edges poly))

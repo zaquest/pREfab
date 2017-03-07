@@ -8,6 +8,8 @@ module Data.Segment
      , nearestPoint
      , distance
      , ends
+     , start
+     , end
      ) where
 
 import Prelude
@@ -20,6 +22,12 @@ import Linear.Metric (distance) as LM
 
 -- | Represents segment in ends of type `p`
 data Seg p = Seg p p
+
+start :: forall p. Seg p -> p
+start (Seg s _) = s
+
+end :: forall p. Seg p -> p
+end (Seg _ e) = e
 
 -- | Represents segment in R2
 type Seg2 a = Seg (P2 a)

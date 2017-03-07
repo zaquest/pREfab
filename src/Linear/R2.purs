@@ -1,7 +1,7 @@
 module Linear.R2 where
 
 import Prelude
-import Data.Monoid ((<>))
+--import Data.Monoid ((<>))
 import Data.Foldable (class Foldable)
 import Linear.Epsilon (class Epsilon, nearZero)
 import Linear.Vector ( class Additive, defaultZero, defaultVAddV

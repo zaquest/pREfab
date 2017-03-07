@@ -1,3 +1,4 @@
+-- vim: cc=70
 module Linear.Metric where
 
 import Prelude

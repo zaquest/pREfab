@@ -2,9 +2,9 @@ module Interactive where
 
 import Prelude
 import Data.Array (concatMap, (..))
-import Data.Monoid ((<>))
 import Data.Maybe (Maybe(..), maybe)
-import Data.Maybe.First (First(..), runFirst)
+import Data.Maybe.First (First(..))
+import Data.Newtype (unwrap)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Ref ( REF, Ref, newRef, readRef, modifyRef
                              , modifyRef', writeRef )
@@ -22,6 +22,7 @@ import Data.Foreign (readString)
 import Data.Either (Either(..))
 import Data.Bifunctor (lmap)
 import Data.Int (fromString)
+import Control.Monad.Except (runExcept)
 
 import Linear.R2 (p2, P2, r2)
 import Editor.Editor (Editor)
@@ -62,8 +63,8 @@ onMouseDown :: forall e
 onMouseDown stateRef event jq = void do
   start <- mouseXY event
   modifyRef stateRef \s ->
-    s { drag = runFirst ((First (editPointDrag s.editor start))
-                        <> (First (scrollDrag s.editor start))) }
+    s { drag = unwrap ((First (editPointDrag s.editor start))
+                       <> (First (scrollDrag s.editor start))) }
 
 onMouseMove :: forall e
              . Ref State
@@ -101,7 +102,7 @@ onMouseUp stateRef event jq = do
                 else H.push s.history e.workArea.poly
       writeRef stateRef (s { editor = e, history = h, drag = Nothing })
       drawWorkArea e
-      saveHistory s.storage h
+      --saveHistory s.storage h
       updateHistoryUI h
 
 onZoom :: forall e
@@ -136,11 +137,12 @@ onSave :: forall e
               , dom     :: DOM
               , put     :: PUT
               , ref     :: REF
+              , storage :: STORAGE
               | e ) Unit
 onSave stateRef event jq = do
   preventDefault event
   jqDepth <- select "#depth input"
-  eStrVal <- readString <$> getValue jqDepth
+  eStrVal <- (runExcept <<< readString) <$> getValue jqDepth
   let eVal = do str <- lmap show eStrVal
                 maybe (Left "Not Int") Right (fromString str)
   case eVal of
@@ -165,6 +167,7 @@ onSave stateRef event jq = do
           output <- newOutput
           runPut (put pfile) output
           saveAsFile "prefab.obr" output
+      saveHistory state.storage state.history
 
 onResize :: forall e
           . Ref State
@@ -202,7 +205,7 @@ onUndo stateRef = do
     Nothing -> pure unit
     Just state -> do
       drawWorkArea state.editor
-      saveHistory state.storage state.history
+      --saveHistory state.storage state.history
       updateHistoryUI state.history
 
 onRedo :: forall e
@@ -225,7 +228,7 @@ onRedo stateRef = do
     Nothing -> pure unit
     Just state -> do
       drawWorkArea state.editor
-      saveHistory state.storage state.history
+      --saveHistory state.storage state.history
       updateHistoryUI state.history
 
 onReset :: forall e
@@ -244,7 +247,7 @@ onReset stateRef = do
         s' = s { editor = e, history = h }
      in { state: s', value: s' }
   drawWorkArea result.editor
-  saveHistory result.storage result.history
+  --saveHistory result.storage result.history
   updateHistoryUI result.history
 
 updateHistoryUI :: forall e a

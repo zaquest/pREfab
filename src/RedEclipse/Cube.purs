@@ -1,7 +1,7 @@
 module RedEclipse.Cube where
 
 import Prelude
-import Data.Semigroup ((<>))
+--import Data.Semigroup ((<>))
 import Data.Int.Bits ((.|.), (.&.), shl)
 import Put (putWord8)
 import Serialize (class Serialize)

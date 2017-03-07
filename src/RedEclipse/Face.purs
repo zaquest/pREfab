@@ -9,9 +9,8 @@ import Prelude
 import Control.MonadZero (guard)
 import Data.Int (ceil, round, toNumber)
 import Data.Foldable (class Foldable, foldl)
-import Data.Monoid ((<>))
 import Data.Traversable (class Traversable, traverseDefault, sequence)
-import Data.Array ((..), (!!), head, (\\), intersect)
+import Data.Array ((..), head, (\\), intersect)
 import Data.Polygon ( Poly2, isConvex, length, origin, square, clip
                     , move, prunePoly, points, edges )
 import Data.BoundingBox (width, height, boundingBox)
@@ -93,7 +92,7 @@ toPlane poly =
             let cs = square (toNumber gridSize) (toNumber <$> p2 x y ^* gridSize)
              in case clip cs oPoly >>= prunePoly of
                   Nothing -> Just emptyCube
-                  Just poly -> faceToCube <$> polyToFace poly
+                  Just poly'' -> faceToCube <$> polyToFace poly''
    in (\p -> { size: v2 (width / gridSize) (height / gridSize), plane: p }) <$> plane
 
 
@@ -203,7 +202,7 @@ assignSide {width, height} seg@(Seg (P2 s) (P2 e)) (P2 p) =
      else -- vertical
        let x = (p.y - s.y) / (e.y - s.y) * (e.x - s.x) + s.x
         in if p.x < x then SRight else SLeft
-  where proj g (Seg (P2 s) (P2 e)) = abs (g s - g e)
+  where proj g (Seg (P2 s') (P2 e')) = abs (g s' - g e')
         px = proj _.x seg
         py = proj _.y seg
         rpx = px / width
@@ -258,3 +257,64 @@ faceToCube (Face f) =
        , edge13: solidEdge, edge57: solidEdge
        , edge04: f.right  , edge15: f.left
        , edge26: f.right  , edge37: f.left }
+
+-- TODO: bad poly
+-- (Poly [(P2 40.0 72.0)
+--       ,(P2 48.0 71.0)
+--       ,(P2 56.0 69.0)
+--       ,(P2 56.0 64.0)
+--       ,(P2 40.0 48.0)
+--       ,(P2 40.0 40.0)
+--       ,(P2 48.0 40.0)
+--       ,(P2 64.0 56.0)
+--       ,(P2 69.0 56.0)
+--       ,(P2 71.0 48.0)
+--       ,(P2 72.0 40.0)
+--       ,(P2 71.0 32.0)
+--       ,(P2 69.0 24.0)
+--       ,(P2 64.0 16.0)
+--       ,(P2 56.0 11.0)
+--       ,(P2 48.0 9.0)
+--       ,(P2 40.0 8.0)
+--       ,(P2 32.0 9.0)
+--       ,(P2 24.0 11.0)
+--       ,(P2 16.0 16.0)
+--       ,(P2 11.0 24.0)
+--       ,(P2 9.0 32.0)
+--       ,(P2 8.0 40.0)
+--       ,(P2 9.0 48.0)
+--       ,(P2 11.0 56.0)
+--       ,(P2 16.0 64.0)
+--       ,(P2 24.0 69.0)
+--       ,(P2 32.0 71.0)
+--       ,(P2 40.0 72.0)
+--       ,(P2 40.0 80.0)
+--       ,(P2 32.0 79.0)
+--       ,(P2 24.0 77.0)
+--       ,(P2 16.0 72.0)
+--       ,(P2 8.0 64.0)
+--       ,(P2 3.0 56.0)
+--       ,(P2 1.0 48.0)
+--       ,(P2 0.0 40.0)
+--       ,(P2 1.0 32.0)
+--       ,(P2 3.0 24.0)
+--       ,(P2 8.0 16.0)
+--       ,(P2 16.0 8.0)
+--       ,(P2 24.0 3.0)
+--       ,(P2 32.0 1.0)
+--       ,(P2 40.0 0.0)
+--       ,(P2 48.0 1.0)
+--       ,(P2 56.0 3.0)
+--       ,(P2 64.0 8.0)
+--       ,(P2 72.0 16.0)
+--       ,(P2 77.0 24.0)
+--       ,(P2 79.0 32.0)
+--       ,(P2 80.0 40.0)
+--       ,(P2 79.0 48.0)
+--       ,(P2 77.0 56.0)
+--       ,(P2 72.0 64.0)
+--       ,(P2 64.0 72.0)
+--       ,(P2 56.0 77.0)
+--       ,(P2 48.0 79.0)
+--       ,(P2 40.0 80.0)])
+-- clip by ((48, 40), (56, 48)) square

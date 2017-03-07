@@ -28,23 +28,21 @@ module Data.Polygon
 
 import Prelude
 import Data.Int (odd)
-import Data.Monoid ((<>))
 import Data.Maybe (Maybe(..), maybe)
 import Data.Array ( length, uncons, snoc, zipWith, nub, updateAt
-                  , insertAt, fromFoldable, take, drop ) as A
-import Data.Array.Partial (unsafeIndex) as A
+                  , insertAt, fromFoldable, take, drop, unsafeIndex
+                  , singleton ) as A
 import Partial.Unsafe (unsafePartial)
 import Data.Foldable (class Foldable, foldMap, foldl, foldr, all, sum)
 import Data.Traversable (class Traversable, sequence, traverse, for_)
-import Control.Monad.Transformerless.State ( modify, put, get
-                                           , execState )
+import Control.Monad.State ( modify, put, get, execState )
 import Data.List (List(..), fromFoldable, tail) as L
 import Data.Enum (fromEnum)
 
 import Linear.Epsilon (class Epsilon, toExact, Approx(..), (<~=),
                        (>~=))
 import Linear.R2 (P2(..), V2, (.+^), p2)
-import Data.Segment (Seg(..), Seg2, intersection)
+import Data.Segment (Seg(..), Seg2, intersection, end)
 import Data.Segment (inside, outside) as S
 import Data.Corner (Corner(..), isLine)
 import Data.Corner (clockWise, crossZ) as C
@@ -132,6 +130,9 @@ origin (Poly ps) = fromJust $ foldlA2 min ps
 clockWise :: forall a. (Ring a, Epsilon a) => Poly2 a -> Boolean
 clockWise poly = all C.clockWise (corners poly)
 
+-- | Type of a function that checks if a point lies inside of an edge
+type InsideFn = P2 Number -> Seg2 Number -> Boolean
+
 -- | `inside p edge` point `p` is `inside` of `edge` if it lies on the
 -- same side of `edge` as the reminder of the clip polygon
 -- Complexity is supposed to be O(nm + k log(k)) where
@@ -146,7 +147,6 @@ sutherlandHodgman ::
   -> Poly2 Number  -- ^ Clip polygon (have to be convex)
   -> Poly2 Number  -- ^ Subject polygon
   -> Maybe (Poly2 Number)  -- ^ Intersection
-                   -- TODO: there's not always intersection
 sutherlandHodgman inside (Poly clipPoly) (Poly subjPoly) =
   mkPoly <<< nub' $ flip execState subjPoly $
     for_ (ptEdges clipPoly) $ \(Seg cs ce) -> do
@@ -166,6 +166,23 @@ sutherlandHodgman inside (Poly clipPoly) (Poly subjPoly) =
   where add = flip A.snoc
         nub' = map toExact <<< A.nub <<< map Approx
         ptEdges ps = A.zipWith Seg ps (rot 1 ps)
+
+
+-- | Step in Sutherland-Hodgman algorithm that clips off the part of
+-- a subject polygon that is outside of a one clip polygon edge.
+clipEdgePoly :: InsideFn -> Seg2 Number -> Poly2 Number -> Array (P2 Number)
+clipEdgePoly inside edge@(Seg cs ce) poly = []
+
+-- | Step in Sutherland-Hodgman algorithm that clips off the part of
+-- a subject edge that is outside of a clip polygon edge.
+clipEdgeEdge :: InsideFn -> Seg2 Number -> Seg2 Number -> Array (P2 Number)
+clipEdgeEdge inside clipEdge subjEdge =
+  if end isInside
+     then []  <> [end subjEdge]
+     else []
+  where isInside = (_ `inside` clipEdge) <$> subjEdge
+        intersect a = maybe [] A.singleton (intersection subjEdge clipEdge)
+
 
 -- | https://en.wikipedia.org/wiki/Sutherland–Hodgman_algorithm
 -- `clipPoly` have to be convex
