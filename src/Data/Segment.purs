@@ -42,7 +42,7 @@ instance showSeg :: Show p => Show (Seg p) where
   show (Seg s e) = "(Seg " <> show s <> " " <> show e <> ")"
 
 -- | Tries to find intersection point of two lines given by segments.
-intersection :: forall a. (Epsilon a, EuclideanRing a)
+intersection :: forall a. Epsilon a => EuclideanRing a
              => Seg2 a -> Seg2 a -> Maybe (P2 a)
 intersection (Seg (P2 {x: x1, y: y1}) (P2 {x: x2, y: y2}))
              (Seg (P2 {x: x3, y: y3}) (P2 {x: x4, y: y4})) =
@@ -59,17 +59,17 @@ intersection (Seg (P2 {x: x1, y: y1}) (P2 {x: x2, y: y2}))
 
 -- | Counter clock-wise
 -- Same as Data.Corner.counterClockWise
-outside :: forall a. (Ring a, Epsilon a) => P2 a -> Seg2 a -> Boolean
+outside :: forall a. Ring a => Epsilon a => P2 a -> Seg2 a -> Boolean
 outside p (Seg s e) = crossZ (e .-. s) (p .-. e) >> zero
 
 -- | Clock-wise
 -- Same as Data.Corner.clockWise
-inside :: forall a. (Ring a, Epsilon a) => P2 a -> Seg2 a -> Boolean
+inside :: forall a. Ring a => Epsilon a => P2 a -> Seg2 a -> Boolean
 inside p (Seg s e) = crossZ (e .-. s) (p .-. e) << zero
 
 -- | Checks if point `p` lies on the same line as segment `seg`
 -- Same as Data.Corner.isLine
-onLine :: forall a. (Ring a, Epsilon a) => P2 a -> Seg2 a -> Boolean
+onLine :: forall a. Ring a => Epsilon a => P2 a -> Seg2 a -> Boolean
 onLine p (Seg s e) = nearZero (crossZ (e .-. s) (p .-. e))
 
 -- | Returns nearest `ab` segment point to point `p`

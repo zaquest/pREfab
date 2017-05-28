@@ -38,42 +38,38 @@ instance intEpsilon :: Epsilon Int where
 -- | Compare two numbers. Consider them equal if their difference is
 -- | approximately zero as given by `nearZero` from `Epsilon` type
 -- | class isntance.
-approxCompare :: forall a. (Ring a, Epsilon a) => a -> a -> Ordering
+approxCompare :: forall a. Ring a => Epsilon a => a -> a -> Ordering
 approxCompare x y = if nearZero (x - y)
                        then EQ
                        else compare x y
 
 -- | `approxEQ` / `(~=)` is an approximate version of `eq` / `(==)`.
-approxEQ :: forall a. (Ring a, Epsilon a) => a -> a -> Boolean
+approxEQ :: forall a. Ring a => Epsilon a => a -> a -> Boolean
 approxEQ x y = approxCompare x y == EQ
 infix 4 approxEQ as ~=
 
 -- | `approxLT` / `(<<)` is an approximate version of
 -- | `lessThan` / `(<)`.
-approxLT :: forall a. (Ring a, Epsilon a) => a -> a -> Boolean
+approxLT :: forall a. Ring a => Epsilon a => a -> a -> Boolean
 approxLT x y = approxCompare x y == LT
 infixl 4 approxLT as <<
 
 -- | `approxGT` / `(>>)` is an approximate version of
 -- | `greaterThan` / `(>)`.
-approxGT :: forall a. (Ring a, Epsilon a) => a -> a -> Boolean
+approxGT :: forall a. Ring a => Epsilon a => a -> a -> Boolean
 approxGT x y = approxCompare x y == GT
 infixl 4 approxGT as >>
 
 -- | `approxLessThanOrEq` / `(<~=)` is an approximate version of
 -- | `lessThanOrEq` / `(<=)`.
-approxLessThanOrEq :: forall a
-                    . (Ring a, Epsilon a)
-                   => a -> a -> Boolean
+approxLessThanOrEq :: forall a. Ring a => Epsilon a => a -> a -> Boolean
 approxLessThanOrEq x y = let o = approxCompare x y
                           in o == LT || o == EQ
 infixl 4 approxLessThanOrEq as <~=
 
 -- | `approxGreaterThanOrEq` / `(>~=)` is an approximate version of
 -- | `greaterThanOrEq` / `(>=)`.
-approxGreaterThanOrEq :: forall a
-                       . (Ring a, Epsilon a)
-                      => a -> a -> Boolean
+approxGreaterThanOrEq :: forall a. Ring a => Epsilon a => a -> a -> Boolean
 approxGreaterThanOrEq x y = let o = approxCompare x y
                              in o == GT || o == EQ
 infixl 4 approxGreaterThanOrEq as >~=
@@ -87,8 +83,7 @@ newtype Approx a = Approx a
 toExact :: forall a. Approx a -> a
 toExact (Approx a) = a
 
-instance approxEqInstance :: (Ring a, Epsilon a)
-                          => Eq (Approx a) where
+instance approxEqInstance :: (Ring a, Epsilon a) => Eq (Approx a) where
     eq (Approx x) (Approx y) = approxEQ x y
 
 instance approxOrd :: (Ring a, Epsilon a) => Ord (Approx a) where

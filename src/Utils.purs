@@ -20,7 +20,7 @@ import Data.Array (zipWith) as A
 import Data.Array ((..))
 
 -- | Applicative specialized `foldl1`.
-foldlA2 :: forall t f a. (Foldable t, Applicative f)
+foldlA2 :: forall t f a. Foldable t => Applicative f
         => (a -> a -> a) -> t (f a) -> Maybe (f a)
 foldlA2 f = foldl af Nothing
   where af Nothing a = Just a

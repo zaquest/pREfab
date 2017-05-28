@@ -127,7 +127,7 @@ origin :: forall a. Ord a => Poly2 a -> P2 a
 origin (Poly ps) = fromJust $ foldlA2 min ps
 
 -- | Only for convex polygons
-clockWise :: forall a. (Ring a, Epsilon a) => Poly2 a -> Boolean
+clockWise :: forall a. Ring a => Epsilon a => Poly2 a -> Boolean
 clockWise poly = all C.clockWise (corners poly)
 
 -- | Type of a function that checks if a point lies inside of an edge
@@ -192,7 +192,7 @@ clip clipPoly subjPoly =
    in sutherlandHodgman inside clipPoly subjPoly
 
 -- | Based on http://stackoverflow.com/a/1881201/1211428
-isConvex :: forall a. (Ring a, Epsilon a) => Poly2 a -> Boolean
+isConvex :: forall a. Ring a => Epsilon a => Poly2 a -> Boolean
 isConvex poly =
   let czs = C.crossZ <$> corners poly
    in all (\z -> z >~= zero) czs || all (\z -> z <~= zero) czs
@@ -201,7 +201,7 @@ type Chain p = L.List p
 type Chain2 a = Chain (P2 a)
 
 -- | Takes a polygonal chain and removes middle points of segments
-pruneChain :: forall a. (Ring a, Epsilon a) => Chain2 a -> Chain2 a
+pruneChain :: forall a. Ring a => Epsilon a => Chain2 a -> Chain2 a
 pruneChain (L.Cons p0 ps0@(L.Cons p1 ps1@(L.Cons p2 _))) =
   if isLine (Corner p0 p1 p2)
      then pruneChain (L.Cons p0 ps1)
@@ -214,7 +214,7 @@ polyToChain (Poly ps) = L.fromFoldable ps
 chainToPoly :: forall p. Chain p -> Maybe (Poly p)
 chainToPoly ps = mkPoly (A.fromFoldable ps)
 
-prunePoly :: forall a. (Ring a, Epsilon a)
+prunePoly :: forall a. Ring a => Epsilon a
           => Poly2 a -> Maybe (Poly2 a)
 prunePoly poly =
   let chain = L.Cons (poly `index` (-1)) (polyToChain poly)
@@ -224,7 +224,7 @@ prunePoly poly =
 move :: forall a. Semiring a => Poly2 a -> V2 a -> Poly2 a
 move poly v = (\p -> p .+^ v) <$> poly
 
-crossingNumber :: forall a. (Ord a, EuclideanRing a)
+crossingNumber :: forall a. Ord a => EuclideanRing a
                => Poly2 a -> P2 a -> Int
 crossingNumber poly (P2 p) = sum (map crossCnt $ edges poly)
   where
@@ -235,7 +235,7 @@ crossingNumber poly (P2 p) = sum (map crossCnt $ edges poly)
        in fromEnum $ (upwardCross || downwardCross) && (p.x < intersectx)
 
 -- | Crossing number test for a point in a polygon.
-containsPoint :: forall a. (Ord a, EuclideanRing a)
+containsPoint :: forall a. Ord a => EuclideanRing a
               => Poly2 a -> P2 a -> Boolean
 containsPoint poly p = odd (crossingNumber poly p)
 

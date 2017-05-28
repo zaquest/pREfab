@@ -1,7 +1,7 @@
 module RedEclipse.Prefab where
 
 import Control.Apply ((*>))
-import Control.Bind (bind)
+import Control.Bind (discard)
 import Data.Traversable (traverse_)
 import Serialize (class Serialize, put)
 import Put (putWord8)

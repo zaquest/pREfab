@@ -163,22 +163,25 @@ setEdge' poly (Just f) seg@(Seg s e) =
   let ps = points poly
       bb = boundingBox poly
       pt = fromJust $ head (ps \\ [s, e])
-      wh = { width: toNumber (width bb), height: toNumber (height bb) }
-      side = assignSide wh ((\p -> toNumber <$> p) <$> seg) (toNumber <$> pt)
+      bbSize = { width: toNumber (width bb), height: toNumber (height bb) }
+      side = assignSide bbSize (map toNumber <$> seg) (toNumber <$> pt)
    in setEdge f side seg
 
+commonPoint :: Seg2 CGrid -> Seg2 CGrid -> Maybe (P2 CGrid)
+commonPoint (Seg s1 e1) (Seg s2 e2) = head (intersect [s1, e1] [s2, e2])
+
 addMissing :: Face (Maybe (Seg2 CGrid)) -> Face (Maybe (Seg2 CGrid))
-addMissing (Face f@{up: Nothing, left: Just (Seg s1 e1), right: Just (Seg s2 e2)}) =
-  let p = fromJust <<< head $ intersect [s1, e1] [s2, e2]
+addMissing (Face f@{up: Nothing, left: Just l, right: Just r}) =
+  let p = fromJust (commonPoint l r)
    in Face f { up = Just (Seg p p) }
-addMissing (Face f@{right: Nothing, up: Just (Seg s1 e1), down: Just (Seg s2 e2)}) =
-  let p = fromJust <<< head $ intersect [s1, e1] [s2, e2]
+addMissing (Face f@{right: Nothing, up: Just u, down: Just d}) =
+  let p = fromJust (commonPoint u d)
    in Face f { right = Just (Seg p p) }
-addMissing (Face f@{down: Nothing, left: Just (Seg s1 e1), right: Just (Seg s2 e2)}) =
-  let p = fromJust <<< head $ intersect [s1, e1] [s2, e2]
+addMissing (Face f@{down: Nothing, left: Just l, right: Just r}) =
+  let p = fromJust (commonPoint l r)
    in Face f { down = Just (Seg p p) }
-addMissing (Face f@{left: Nothing, up: Just (Seg s1 e1), down: Just (Seg s2 e2)}) =
-  let p = fromJust <<< head $ intersect [s1, e1] [s2, e2]
+addMissing (Face f@{left: Nothing, up: Just u, down: Just d}) =
+  let p = fromJust (commonPoint u d)
    in Face f { left = Just (Seg p p) }
 addMissing f = f
 
@@ -196,10 +199,10 @@ assignSide :: { width :: Number, height :: Number }
            -> Side
 assignSide {width, height} seg@(Seg (P2 s) (P2 e)) (P2 p) =
   if rpx > rpy || rpx ~= rpy && px > py
-     then -- horizontal
+     then -- horizontal edge
        let y = (p.x - s.x) / (e.x - s.x) * (e.y - s.y) + s.y
         in if p.y < y then SUp else SDown
-     else -- vertical
+     else -- vertical edge
        let x = (p.y - s.y) / (e.y - s.y) * (e.x - s.x) + s.x
         in if p.x < x then SRight else SLeft
   where proj g (Seg (P2 s') (P2 e')) = abs (g s' - g e')

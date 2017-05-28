@@ -15,27 +15,27 @@ class Additive f <= Metric f where
   norm :: f Number -> Number
   signorm :: f Number -> f Number
 
-defaultDot :: forall f a. (Additive f, Foldable f, Semiring a)
+defaultDot :: forall f a. Additive f => Foldable f => Semiring a
            => f a -> f a -> a
 defaultDot x y = sum $ liftI2 (*) x y
 
-defaultQuadrance :: forall f a. (Additive f, Foldable f, Semiring a)
+defaultQuadrance :: forall f a. Additive f => Foldable f => Semiring a
                  => f a -> a
 defaultQuadrance v = defaultDot v v
 
-defaultQd :: forall f a. (Additive f, Foldable f, Ring a)
+defaultQd :: forall f a. Additive f => Foldable f => Ring a
           => f a -> f a -> a
 defaultQd x y = defaultQuadrance (x ^-^ y)
 
-defaultDistance :: forall f. (Additive f, Foldable f)
+defaultDistance :: forall f. Additive f => Foldable f
                 => f Number -> f Number -> Number
 defaultDistance x y = defaultNorm (x ^-^ y)
 
-defaultNorm :: forall f. (Additive f, Foldable f)
+defaultNorm :: forall f. Additive f => Foldable f
             => f Number -> Number
 defaultNorm v = sqrt (defaultQuadrance v)
 
-defaultSignorm :: forall f. (Additive f, Foldable f)
+defaultSignorm :: forall f. Additive f => Foldable f
                => f Number -> f Number
 defaultSignorm v = v ^/ (defaultNorm v)
 

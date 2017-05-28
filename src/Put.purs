@@ -15,16 +15,16 @@ module Put
   ) where
 
 import Prelude
-import Control.Monad.Eff (Eff)
+import Control.Monad.Eff (Eff, kind Effect)
 
 -- | Binary output stream (ArrayBuffer inside)
-foreign import data Output :: *
+foreign import data Output :: Type
 
 -- | Create new output stream.
 foreign import newOutput :: forall e. Eff ( put :: PUT | e ) Output
 
 -- | The `PUT` effect represents computations that write to `Output`.
-foreign import data PUT :: !
+foreign import data PUT :: Effect
 
 -- | Put monad
 newtype PutM a = Put (forall e. Output -> Eff ( put :: PUT | e ) a)

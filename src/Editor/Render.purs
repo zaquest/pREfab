@@ -22,25 +22,25 @@ import Utils (enumerate, whileM_)
 
 drawGrid :: forall e. LineStyle -> View -> Number -> Context2D -> Eff (canvas :: CANVAS | e) Unit
 drawGrid style { origin, width, height } gridSz ctx = void do
-  beginPath ctx
-  setStrokeStyle style.style ctx
-  setLineWidth style.width ctx
+  _ <- beginPath ctx
+  _ <- setStrokeStyle style.style ctx
+  _ <- setLineWidth style.width ctx
   whileM_ start.x (\x -> x <= width) $ \x -> do
-    moveTo ctx x 0.0
-    lineTo ctx x height
+    _ <- moveTo ctx x 0.0
+    _ <- lineTo ctx x height
     pure (x + gridSz)
   whileM_ start.y (\y -> y <= height) $ \y -> do
-    moveTo ctx 0.0 y
-    lineTo ctx width y
+    _ <- moveTo ctx 0.0 y
+    _ <- lineTo ctx width y
     pure (y + gridSz)
   stroke ctx
   where start = r2 $ origin - ((toNumber <<< round) <$> (origin ^/ gridSz)) ^* gridSz
 
 drawPoint :: forall e. PointStyle -> P2 Number -> Context2D -> Eff (canvas :: CANVAS | e) Unit
 drawPoint style (P2 p) ctx = void do
-  beginPath ctx
-  setFillStyle style.style ctx
-  arc ctx thePoint
+  _ <- beginPath ctx
+  _ <- setFillStyle style.style ctx
+  _ <- arc ctx thePoint
   fill ctx
   where thePoint = { x: p.x, y: p.y, r: style.radius, start: 0.0, end: 2.0 * pi }
 
@@ -48,13 +48,13 @@ drawPoly :: forall e. LineStyle -> PointStyle -> Poly2 Number -> Context2D -> Ef
 drawPoly lstyle pstyle poly ctx = do
   let ht = uncons poly
   let h = r2 ht.head
-  beginPath ctx
-  setStrokeStyle lstyle.style ctx
-  setLineWidth lstyle.width ctx
-  moveTo ctx h.x h.y
+  _ <- beginPath ctx
+  _ <- setStrokeStyle lstyle.style ctx
+  _ <- setLineWidth lstyle.width ctx
+  _ <- moveTo ctx h.x h.y
   for_ ht.tail \(P2 p) -> lineTo ctx p.x p.y
-  lineTo ctx h.x h.y
-  stroke ctx
+  _ <- lineTo ctx h.x h.y
+  _ <- stroke ctx
   for_ (points poly) \p -> drawPoint pstyle p ctx
 
 drawValidity :: forall e. FillStyle -> P2 Number -> Plane Boolean -> Number -> Context2D -> Eff (canvas :: CANVAS | e) Unit
@@ -62,7 +62,7 @@ drawValidity style (P2 lo) validity gridSz ctx = do
   for_ (enumerate validity) \row ->
     for_ (enumerate row.elem) \p ->
       unless p.elem <<< void $ do
-        setFillStyle style ctx
+        _ <- setFillStyle style ctx
         fillRect ctx { x: lo.x + (toNumber p.idx) * gridSz
                      , y: lo.y + (toNumber (-row.idx)) * gridSz
                      , w: gridSz
@@ -72,18 +72,18 @@ drawEditPoint :: forall e. LineStyle -> PointStyle -> EditPoint Number -> Contex
 drawEditPoint lstyle pstyle { before: P2 {x: bx, y: by}
                             , point:  p@(P2 {x: px, y: py})
                             , after:  P2 {x: ax, y: ay} } ctx = do
-  beginPath ctx
-  setStrokeStyle lstyle.style ctx
-  setLineWidth lstyle.width ctx
-  moveTo ctx bx by
-  lineTo ctx px py
-  lineTo ctx ax ay
-  stroke ctx
+  _ <- beginPath ctx
+  _ <- setStrokeStyle lstyle.style ctx
+  _ <- setLineWidth lstyle.width ctx
+  _ <- moveTo ctx bx by
+  _ <- lineTo ctx px py
+  _ <- lineTo ctx ax ay
+  _ <- stroke ctx
   drawPoint pstyle p ctx
 
 drawWorkArea :: forall e. Editor -> Eff (canvas :: CANVAS | e) Unit
 drawWorkArea { style, view, workArea, context: ctx } = do
-  clearRect ctx { x: 0.0, y: 0.0, w: view.width, h: view.height }
+  _ <- clearRect ctx { x: 0.0, y: 0.0, w: view.width, h: view.height }
   when (view.zoom > style.subGridMinZoom) $
     drawGrid style.subGrid view subGridSz ctx
   drawGrid style.mainGrid view mainGridSz ctx

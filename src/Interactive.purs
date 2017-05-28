@@ -14,7 +14,7 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.JQuery ( JQueryEvent, JQuery, select, on
                                 , getValue, preventDefault
                                 , addClass, removeClass )
-import DOM.WebStorage (STORAGE, ForeignStorage)
+import DOM.WebStorage.Storage (Storage)
 import DOM (DOM)
 import Window as W
 import JQuery (clientX, clientY)
@@ -47,7 +47,7 @@ import Grid (CGrid)
 
 type State = { drag :: Maybe Drag
              , editor :: Editor
-             , storage :: ForeignStorage
+             , storage :: Storage
              , history :: History (Poly2 CGrid) }
 
 mouseXY :: forall e. JQueryEvent -> Eff (dom :: DOM | e) (P2 Number)
@@ -88,7 +88,6 @@ onMouseUp :: forall e
           -> Eff ( canvas  :: CANVAS
                  , dom     :: DOM
                  , ref     :: REF
-                 , storage :: STORAGE
                  | e ) Unit
 onMouseUp stateRef event jq = do
   current <- mouseXY event
@@ -137,7 +136,6 @@ onSave :: forall e
               , dom     :: DOM
               , put     :: PUT
               , ref     :: REF
-              , storage :: STORAGE
               | e ) Unit
 onSave stateRef event jq = do
   preventDefault event
@@ -190,7 +188,6 @@ onUndo :: forall e
        -> Eff ( canvas :: CANVAS
               , dom     :: DOM
               , ref     :: REF
-              , storage :: STORAGE
               | e ) Unit
 onUndo stateRef = do
   result <- modifyRef' stateRef \s ->
@@ -213,7 +210,6 @@ onRedo :: forall e
        -> Eff ( canvas :: CANVAS
               , dom     :: DOM
               , ref     :: REF
-              , storage :: STORAGE
               | e ) Unit
 onRedo stateRef = do
   result <- modifyRef' stateRef \s ->
@@ -236,7 +232,6 @@ onReset :: forall e
         -> Eff ( canvas :: CANVAS
                , dom     :: DOM
                , ref     :: REF
-               , storage :: STORAGE
                | e ) Unit
 onReset stateRef = do
   result <- modifyRef' stateRef \s ->
@@ -271,14 +266,13 @@ updateHistoryUI h = do
 
 setUpHandlers :: forall e
                . Editor
-              -> ForeignStorage
+              -> Storage
               -> History (Poly2 CGrid)
               -> Eff ( canvas  :: CANVAS
                      , console :: CONSOLE
                      , dom     :: DOM
                      , put     :: PUT
                      , ref     :: REF
-                     , storage :: STORAGE
                      | e ) Unit
 setUpHandlers editor storage history = do
   stateRef <- newRef { drag: Nothing

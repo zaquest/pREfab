@@ -15,7 +15,7 @@ setSize :: forall e
               -> {width :: Number, height :: Number}
               -> Eff ( canvas :: CANVAS | e ) Unit
 setSize canvas {width, height} = void do
-  setCanvasWidth width canvas
+  _ <- setCanvasWidth width canvas
   setCanvasHeight height canvas
 
 -- | `contextCanvas ctx` retrieves canvas element to which drawing
